@@ -53,7 +53,7 @@
             border: 2px solid var(--accent-color);
             border-radius: 12px;
             padding: 20px;
-            max-width: 900px;
+            max-width: 950px;
             margin: 0 auto 30px auto;
             box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
@@ -74,7 +74,7 @@
 
         .config-left {
             flex: 1;
-            min-width: 300px;
+            min-width: 320px;
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -82,7 +82,7 @@
 
         .config-right {
             flex: 1;
-            min-width: 300px;
+            min-width: 320px;
             display: flex;
             flex-direction: column;
             gap: 5px;
@@ -174,6 +174,15 @@
             margin-bottom: 15px;
             padding-bottom: 8px;
             border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .poule-count {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: none;
         }
 
         table {
@@ -265,18 +274,27 @@
                         <option value="8">8 Poules</option>
                     </select>
                 </div>
-                
-                <div style="background: rgba(0,0,0,0.15); padding: 12px; border-radius: 6px; font-size: 0.85rem; color: var(--text-muted); border-left: 3px solid var(--accent-color);">
-                    💡 <strong>Comment ça marche ?</strong> Indiquez vos joueurs à droite (un par ligne). L'application va les mélanger de façon totalement aléatoire et les distribuer équitablement dans les poules.
-                </div>
 
+                <div class="config-group">
+                    <label for="max-joueurs">Nombre de joueurs MAX par poule</label>
+                    <select id="max-joueurs">
+                        <option value="99" selected>Aucune limite</option>
+                        <option value="3">3 joueurs max</option>
+                        <option value="4">4 joueurs max</option>
+                        <option value="5">5 joueurs max</option>
+                        <option value="6">6 joueurs max</option>
+                        <option value="7">7 joueurs max</option>
+                        <option value="8">8 joueurs max</option>
+                    </select>
+                </div>
+                
                 <button class="btn-primary" onclick="genererPoulesAléatoires()">🔀 Lancer le tirage & Générer</button>
             </div>
 
             <!-- Colonne Droite : Liste des joueurs -->
             <div class="config-right">
-                <label for="liste-joueurs">Liste des Joueurs (1 nom par ligne)</label>
-                <textarea id="liste-joueurs" rows="8" placeholder="Exemple :&#10;Marco&#10;Alex&#10;Julien&#10;Nico&#10;Sofiane&#10;Lucas"></textarea>
+                <label for="liste-joueurs" id="label-liste">Liste des Joueurs (1 nom par ligne)</label>
+                <textarea id="liste-joueurs" rows="8" placeholder="Collez vos pseudos ici..."></textarea>
             </div>
         </div>
     </div>
@@ -291,21 +309,27 @@
     <script>
         function genererPoulesAléatoires() {
             var nbPoules = parseInt(document.getElementById('nb-poules').value);
+            var maxParPoule = parseInt(document.getElementById('max-joueurs').value);
             var textJoueurs = document.getElementById('liste-joueurs').value;
             var container = document.getElementById('poules-container');
             
-            // Nettoyage de la liste des joueurs entrés (filtre les lignes vides)
+            // Nettoyage de la liste
             var joueurs = textJoueurs.split('\n')
                 .map(function(name) { return name.trim(); })
                 .filter(function(name) { return name.length > 0; });
 
-            // Si aucune liste n'est fournie, on crée des joueurs fictifs pour dépanner
             if (joueurs.length === 0) {
                 alert("Veuillez entrer au moins quelques noms de joueurs dans la zone de texte.");
                 return;
             }
 
-            // Algorithme de mélange de Fisher-Yates (Aléatoire parfait)
+            // Vérification de la capacité maximale des poules
+            if (joueurs.length > (nbPoules * maxParPoule)) {
+                alert("⚠️ Attention : Vous avez " + joueurs.length + " joueurs inscrits, mais avec votre configuration actuelle (ouvrable à " + nbPoules + " poules de " + maxParPoule + " max), vous ne pouvez accueillir que " + (nbPoules * maxParPoule) + " joueurs max. Augmentez le nombre de poules ou la limite max !");
+                return;
+            }
+
+            // Mélange de Fisher-Yates
             for (var i = joueurs.length - 1; i > 0; i--) {
                 var j = Math.floor(Math.random() * (i + 1));
                 var temp = joueurs[i];
@@ -313,7 +337,7 @@
                 joueurs[j] = temp;
             }
 
-            // Création des structures de poules vides
+            // Initialisation des structures de poules
             var poules = [];
             var alphabet = "ABCDEFGH";
             for (var p = 0; p < nbPoules; p++) {
@@ -323,22 +347,39 @@
                 });
             }
 
-            // Distribution équitable des joueurs alternée (Poule A, Poule B, Poule C...)
-            for (var k = 0; k < joueurs.length; k++) {
-                var indexPoule = k % nbPoules;
-                poules[indexPoule].membres.push(joueurs[k]);
+            // Distribution équitable avec respect de la limite Max
+            var indexJoueur = 0;
+            while (indexJoueur < joueurs.length) {
+                var aDistribue = false;
+                
+                for (var k = 0; k < nbPoules; k++) {
+                    if (indexJoueur >= joueurs.length) break;
+                    
+                    // Si la poule n'a pas encore atteint son maximum, on lui donne un joueur
+                    if (poules[k].membres.length < maxParPoule) {
+                        poules[k].membres.push(joueurs[indexJoueur]);
+                        indexJoueur++;
+                        aDistribue = true;
+                    }
+                }
+                
+                // Sécurité antiloop si toutes les poules sont pleines mais qu'il reste du monde
+                if (!aDistribue) break;
             }
 
-            // Rendu HTML sur la page
+            // Rendu HTML
             container.innerHTML = '';
 
             poules.forEach(function(poule) {
+                // On n'affiche pas une poule restée complètement vide
+                if (poule.membres.length === 0) return;
+
                 var pouleCard = document.createElement('div');
                 pouleCard.className = 'poule-card';
                 
                 var pouleHeader = document.createElement('div');
                 pouleHeader.className = 'poule-header';
-                pouleHeader.innerText = poule.nom;
+                pouleHeader.innerHTML = '<span>' + poule.nom + '</span><span class="poule-count">' + poule.membres.length + ' Joueurs</span>';
                 pouleCard.appendChild(pouleHeader);
                 
                 var table = document.createElement('table');
@@ -361,7 +402,6 @@
                 container.appendChild(pouleCard);
             });
 
-            // Affichage du bouton Mode TV
             document.getElementById('tv-btn').style.display = 'block';
             document.getElementById('tv-notice').style.display = 'block';
         }
