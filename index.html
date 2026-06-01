@@ -9,7 +9,7 @@
             --bg-color: #0f0c1b;
             --card-bg: #1d1836;
             --accent-color: #00ff87;
-            --token-color: #ffd700; /* Couleur Or pour les jetons */
+            --token-color: #ffd700;
             --danger-color: #ff4a4a;
             --text-color: #ffffff;
             --text-muted: #a3a0b8;
@@ -160,6 +160,24 @@
             cursor: pointer;
         }
 
+        .btn-sort-poule {
+            background: #2a244d;
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: background 0.2s;
+        }
+
+        .btn-sort-poule:hover {
+            background: var(--accent-color);
+            color: var(--bg-color);
+        }
+
         .btn-toggle-view {
             position: absolute;
             right: 10px;
@@ -193,6 +211,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        .poule-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .poule-count {
@@ -255,7 +279,8 @@
 
         /* Mode TV */
         body.tv-mode .config-panel,
-        body.tv-mode .btn-toggle-view {
+        body.tv-mode .btn-toggle-view,
+        body.tv-mode .btn-sort-poule {
             display: none !important;
         }
         body.tv-mode header { margin-bottom: 40px; }
@@ -320,11 +345,10 @@
     <div class="grid-poules" id="poules-container"></div>
 
     <div class="tv-notice" id="tv-notice" style="display:none;">
-        Sauvegarde automatique active 🟢 Chaque joueur commence avec 3 jetons. Pour figer l'affichage, cliquez sur <strong>📺 Mode Écran TV</strong>.
+        Sauvegarde automatique active 🟢 Modifiez les jetons tranquillement, puis cliquez sur <strong>🏆 Classer</strong> pour ordonner les lignes.
     </div>
 
     <script>
-        // Charger le tournoi au démarrage si une sauvegarde existe
         window.onload = function() {
             if (localStorage.getItem('pixelArena_poulesTokensData')) {
                 restaurerTournoi();
@@ -350,7 +374,6 @@
                 return;
             }
 
-            // Mélange Aléatoire
             for (var i = joueurs.length - 1; i > 0; i--) {
                 var j = Math.floor(Math.random() * (i + 1));
                 var temp = joueurs[i];
@@ -370,7 +393,6 @@
                 for (var k = 0; k < nbPoules; k++) {
                     if (indexJoueur >= joueurs.length) break;
                     if (poules[k].membres.length < maxParPoule) {
-                        // Changement ici : j = 0 matchs, et tokens = 3 par défaut !
                         poules[k].membres.push({ nom: joueurs[indexJoueur], j: 0, tokens: 3 });
                         indexJoueur++;
                         aDistribue = true;
@@ -399,7 +421,15 @@
                 
                 var pouleHeader = document.createElement('div');
                 pouleHeader.className = 'poule-header';
-                pouleHeader.innerHTML = '<span>' + poule.nom + '</span><span class="poule-count">' + poule.membres.length + ' Joueurs</span>';
+                
+                // En-tête avec titre + bouton de classement
+                pouleHeader.innerHTML = 
+                    '<div class="poule-header-left">' +
+                        '<span>' + poule.nom + '</span>' +
+                        '<button class="btn-sort-poule" onclick="classerPouleManuellement(' + pIdx + ')">🏆 Classer</button>' +
+                    '</div>' +
+                    '<span class="poule-count">' + poule.membres.length + ' Joueurs</span>';
+                
                 pouleCard.appendChild(pouleHeader);
                 
                 var table = document.createElement('table');
@@ -407,18 +437,8 @@
                 
                 var tbody = document.createElement('tbody');
                 
-                // Tri automatique des joueurs par nombre de jetons décroissant
-                var membresTries = poule.membres.map(function(m, originalIdx) {
-                    return { data: m, originalIdx: originalIdx };
-                });
-                
-                membresTries.sort(function(a, b) {
-                    return b.data.tokens - a.data.tokens;
-                });
-                
-                membresTries.forEach(function(item) {
-                    var joueur = item.data;
-                    var jIdx = item.originalIdx;
+                // Rendu dans l'ordre exact stocké (pas de tri automatique forcé ici)
+                poule.membres.forEach(function(joueur, jIdx) {
                     var tr = document.createElement('tr');
                     
                     tr.innerHTML = 
@@ -447,11 +467,20 @@
                 data[pIdx].membres[jIdx][champ] = valeur;
             }
             localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(data));
+            // On ne rafraîchit plus l'affichage visuel pendant la frappe
+        }
+
+        // Fonction déclenchée uniquement au clic sur le bouton "Classer" d'une poule spécifique
+        function classerPouleManuellement(pIdx) {
+            var data = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
             
-            // Si on change les jetons, on rafraîchit l'affichage pour mettre à jour le classement visuel
-            if(champ === 'tokens') {
-                afficherPoules(data);
-            }
+            // Tri uniquement les membres de la poule sélectionnée par jetons décroissants
+            data[pIdx].membres.sort(function(a, b) {
+                return b.tokens - a.tokens;
+            });
+            
+            // Enregistre l'ordre et met à jour l'écran
+            sauvegarderEtAfficher(data);
         }
 
         function restaurerTournoi() {
