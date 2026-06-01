@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PIXEL ARENA - CONFIGURATEUR TOURNOI</title>
+    <title>PIXEL ARENA - TOURNOI FC26</title>
     <style>
         :root {
             --bg-color: #0f0c1b;
@@ -122,11 +122,6 @@
             cursor: pointer;
         }
 
-        button.btn-secondary:hover {
-            border-color: var(--text-color);
-            color: var(--text-color);
-        }
-
         .btn-toggle-view {
             position: absolute;
             right: 10px;
@@ -210,47 +205,31 @@
             font-size: 1rem;
         }
 
-        .input-stat:hover {
-            border-color: rgba(255,255,255,0.2);
-        }
-
-        .input-stat:focus {
-            background: var(--input-bg);
-            border-color: var(--accent-color);
-        }
+        .input-stat:hover { border-color: rgba(255,255,255,0.2); }
+        .input-stat:focus { background: var(--input-bg); border-color: var(--accent-color); }
 
         .col-joueur { width: 45%; }
         .col-stat { width: 11%; text-align: center; }
         .col-pts { width: 11%; text-align: center; }
         .col-pts input { color: var(--accent-color); font-weight: bold; }
 
-        /* Mode TV (Masquage des éléments inutiles) */
+        /* Mode TV (Masquage de la configuration) */
         body.tv-mode .config-panel,
         body.tv-mode .btn-toggle-view {
             display: none !important;
         }
-        
-        body.tv-mode header {
-            margin-bottom: 40px;
-        }
-
-        .tv-notice {
-            text-align: center;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-top: 20px;
-        }
+        body.tv-mode header { margin-bottom: 40px; }
+        .tv-notice { text-align: center; font-size: 0.9rem; color: var(--text-muted); margin-top: 20px; }
         body.tv-mode .tv-notice { display: none; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>PIXEL ARENA <span>• TOURNOI</span></h1>
+        <h1>PIXEL ARENA <span>• TOURNOI FC26</span></h1>
         <button class="btn-secondary btn-toggle-view" id="tv-btn" onclick="toggleTVMode()" style="display:none;">📺 Mode Écran TV</button>
     </header>
 
-    <!-- Configuteur visible au chargement -->
     <div class="config-panel" id="setup-panel">
         <div class="config-title">⚙️ Configuration de l'affichage du tournoi</div>
         <div class="config-row">
@@ -286,67 +265,56 @@
             </div>
         </div>
         <p style="font-size: 0.85rem; color: var(--text-muted);">
-            💡 *Une fois généré, vous pouvez modifier directement les pseudos, matchs joués (J), victoires (G), Goal-Average (Diff) et Points (Pts) en cliquant sur les cases.*
+            💡 *Une fois généré, modifiez les pseudos, matchs joués (J), victoires (G), Goal-Average (Diff) et Points (Pts) directement en cliquant sur les cases.*
         </p>
     </div>
 
-    <!-- Conteneur des Poules -->
     <div class="grid-poules" id="poules-container"></div>
 
     <div class="tv-notice" id="tv-notice" style="display:none;">
-        Pour figer l'affichage et le mettre proprement sur le Fire Stick, cliquez sur le bouton <strong>📺 Mode Écran TV</strong> en haut à droite.
+        Pour figer l'affichage sur le Fire Stick, cliquez sur le bouton <strong>📺 Mode Écran TV</strong> en haut à droite.
     </div>
 
     <script>
         function genererPoules() {
-            const nbPoules = parseInt(document.getElementById('nb-poules').value);
-            const nbJoueurs = parseInt(document.getElementById('nb-joueurs').value);
-            const container = document.getElementById('poules-container');
+            var nbPoules = parseInt(document.getElementById('nb-poules').value);
+            var nbJoueurs = parseInt(document.getElementById('nb-joueurs').value);
+            var container = document.getElementById('poules-container');
             
             container.innerHTML = '';
-            const alphabet = "ABCDEFGH";
+            var alphabet = "ABCDEFGH";
 
-            for (let i = 0; i < nbPoules; i++) {
-                const nomPoule = `Poule ${alphabet[i]}`;
-                let pouleHTML = `
-                    <div class="poule-card">
-                        <div class="poule-header">${nomPoule}</div>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th class="col-joueur">Joueur</th>
-                                    <th class="col-stat">J</th>
-                                    <th class="col-stat">G</th>
-                                    <th class="col-stat">Diff</th>
-                                    <th class="col-pts">Pts</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-
-                for (let j = 1; j <= nbJoueurs; j++) {
-                    pouleHTML += `
-                        <tr>
-                            <td class="col-joueur">
-                                <input type="text" class="editable-name" value="Joueur ${j}" placeholder="Nom">
-                            </td>
-                            <td class="col-stat"><input type="number" class="input-stat" value="0" min="0"></td>
-                            <td class="col-stat"><input type="number" class="input-stat" value="0" min="0"></td>
-                            <td class="col-stat"><input type="text" class="input-stat" value="0"></td>
-                            <td class="col-pts"><input type="number" class="input-stat" value="0" min="0"></td>
-                        </tr>
-                    `;
+            for (var i = 0; i < nbPoules; i++) {
+                var nomPoule = "Poule " + alphabet[i];
+                
+                var pouleCard = document.createElement('div');
+                pouleCard.className = 'poule-card';
+                
+                var pouleHeader = document.createElement('div');
+                pouleHeader.className = 'poule-header';
+                pouleHeader.innerText = nomPoule;
+                pouleCard.appendChild(pouleHeader);
+                
+                var table = document.createElement('table');
+                table.innerHTML = '<thead><tr><th class="col-joueur">Joueur</th><th class="col-stat">J</th><th class="col-stat">G</th><th class="col-stat">Diff</th><th class="col-pts">Pts</th></tr></thead>';
+                
+                var tbody = document.createElement('tbody');
+                
+                for (var j = 1; j <= nbJoueurs; j++) {
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td class="col-joueur"><input type="text" class="editable-name" value="Joueur ' + j + '" placeholder="Nom"></td>' +
+                                   '<td class="col-stat"><input type="number" class="input-stat" value="0" min="0"></td>' +
+                                   '<td class="col-stat"><input type="number" class="input-stat" value="0" min="0"></td>' +
+                                   '<td class="col-stat"><input type="text" class="input-stat" value="0"></td>' +
+                                   '<td class="col-pts"><input type="number" class="input-stat" value="0" min="0"></td>';
+                    tbody.appendChild(tr);
                 }
-
-                pouleHTML += `
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-                container.innerHTML += pouleHTML;
+                
+                table.appendChild(tbody);
+                pouleCard.appendChild(table);
+                container.appendChild(pouleCard);
             }
 
-            // Afficher les outils du mode TV maintenant qu'un tournoi existe
             document.getElementById('tv-btn').style.display = 'block';
             document.getElementById('tv-notice').style.display = 'block';
         }
@@ -354,9 +322,8 @@
         function toggleTVMode() {
             document.body.classList.add('tv-mode');
             
-            // Créer un petit bouton discret de retour pour la gestion au cas où
             if(!document.getElementById('exit-tv-btn')) {
-                let exitBtn = document.createElement('button');
+                var exitBtn = document.createElement('button');
                 exitBtn.id = 'exit-tv-btn';
                 exitBtn.innerText = "⚙️ Réouvrir la configuration";
                 exitBtn.style.position = 'fixed';
