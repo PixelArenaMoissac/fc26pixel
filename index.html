@@ -53,7 +53,7 @@
             border: 2px solid var(--accent-color);
             border-radius: 12px;
             padding: 20px;
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto 30px auto;
             box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
@@ -66,12 +66,26 @@
             font-weight: bold;
         }
 
-        .config-row {
+        .config-main {
             display: flex;
-            gap: 20px;
+            gap: 25px;
             flex-wrap: wrap;
-            align-items: center;
-            margin-bottom: 15px;
+        }
+
+        .config-left {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .config-right {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
 
         .config-group {
@@ -84,9 +98,10 @@
             font-size: 0.85rem;
             color: var(--text-muted);
             text-transform: uppercase;
+            font-weight: 600;
         }
 
-        select, input, button {
+        select, input, button, textarea {
             background: var(--input-bg);
             border: 1px solid var(--border-color);
             color: var(--text-color);
@@ -96,7 +111,13 @@
             outline: none;
         }
 
-        select:focus, input:focus {
+        textarea {
+            resize: vertical;
+            font-family: monospace;
+            font-size: 0.95rem;
+        }
+
+        select:focus, input:focus, textarea:focus {
             border-color: var(--accent-color);
         }
 
@@ -108,11 +129,12 @@
             border: none;
             transition: transform 0.2s, opacity 0.2s;
             text-transform: uppercase;
+            padding: 12px;
         }
 
         button.btn-primary:hover {
             opacity: 0.9;
-            transform: scale(1.02);
+            transform: scale(1.01);
         }
 
         button.btn-secondary {
@@ -184,15 +206,8 @@
             border-radius: 4px;
         }
 
-        .editable-name:hover {
-            border-color: rgba(255,255,255,0.2);
-            background: rgba(255,255,255,0.02);
-        }
-
-        .editable-name:focus {
-            background: var(--input-bg);
-            border-color: var(--accent-color);
-        }
+        .editable-name:hover { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.02); }
+        .editable-name:focus { background: var(--input-bg); border-color: var(--accent-color); }
 
         .input-stat {
             width: 45px;
@@ -213,7 +228,7 @@
         .col-pts { width: 11%; text-align: center; }
         .col-pts input { color: var(--accent-color); font-weight: bold; }
 
-        /* Mode TV (Masquage de la configuration) */
+        /* Mode TV */
         body.tv-mode .config-panel,
         body.tv-mode .btn-toggle-view {
             display: none !important;
@@ -230,45 +245,43 @@
         <button class="btn-secondary btn-toggle-view" id="tv-btn" onclick="toggleTVMode()" style="display:none;">📺 Mode Écran TV</button>
     </header>
 
+    <!-- Configuteur -->
     <div class="config-panel" id="setup-panel">
-        <div class="config-title">⚙️ Configuration de l'affichage du tournoi</div>
-        <div class="config-row">
-            <div class="config-group">
-                <label for="nb-poules">Nombre de Poules</label>
-                <select id="nb-poules">
-                    <option value="1">1 Poule</option>
-                    <option value="2">2 Poules</option>
-                    <option value="3">3 Poules</option>
-                    <option value="4" selected>4 Poules</option>
-                    <option value="5">5 Poules</option>
-                    <option value="6">6 Poules</option>
-                    <option value="7">7 Poules</option>
-                    <option value="8">8 Poules</option>
-                </select>
-            </div>
-            
-            <div class="config-group">
-                <label for="nb-joueurs">Joueurs par Poule</label>
-                <select id="nb-joueurs">
-                    <option value="2">2 Joueurs</option>
-                    <option value="3">3 Joueurs</option>
-                    <option value="4" selected>4 Joueurs</option>
-                    <option value="5">5 Joueurs</option>
-                    <option value="6">6 Joueurs</option>
-                    <option value="7">7 Joueurs</option>
-                    <option value="8">8 Joueurs</option>
-                </select>
+        <div class="config-title">⚙️ Configuration & Tirage au sort des Poules</div>
+        
+        <div class="config-main">
+            <!-- Colonne Gauche : Réglages -->
+            <div class="config-left">
+                <div class="config-group">
+                    <label for="nb-poules">Nombre de Poules souhaité</label>
+                    <select id="nb-poules">
+                        <option value="1">1 Poule</option>
+                        <option value="2">2 Poules</option>
+                        <option value="3">3 Poules</option>
+                        <option value="4" selected>4 Poules</option>
+                        <option value="5">5 Poules</option>
+                        <option value="6">6 Poules</option>
+                        <option value="7">7 Poules</option>
+                        <option value="8">8 Poules</option>
+                    </select>
+                </div>
+                
+                <div style="background: rgba(0,0,0,0.15); padding: 12px; border-radius: 6px; font-size: 0.85rem; color: var(--text-muted); border-left: 3px solid var(--accent-color);">
+                    💡 <strong>Comment ça marche ?</strong> Indiquez vos joueurs à droite (un par ligne). L'application va les mélanger de façon totalement aléatoire et les distribuer équitablement dans les poules.
+                </div>
+
+                <button class="btn-primary" onclick="genererPoulesAléatoires()">🔀 Lancer le tirage & Générer</button>
             </div>
 
-            <div class="config-group" style="padding-top: 18px;">
-                <button class="btn-primary" onclick="genererPoules()">Générer le Tournoi</button>
+            <!-- Colonne Droite : Liste des joueurs -->
+            <div class="config-right">
+                <label for="liste-joueurs">Liste des Joueurs (1 nom par ligne)</label>
+                <textarea id="liste-joueurs" rows="8" placeholder="Exemple :&#10;Marco&#10;Alex&#10;Julien&#10;Nico&#10;Sofiane&#10;Lucas"></textarea>
             </div>
         </div>
-        <p style="font-size: 0.85rem; color: var(--text-muted);">
-            💡 *Une fois généré, modifiez les pseudos, matchs joués (J), victoires (G), Goal-Average (Diff) et Points (Pts) directement en cliquant sur les cases.*
-        </p>
     </div>
 
+    <!-- Conteneur des Poules -->
     <div class="grid-poules" id="poules-container"></div>
 
     <div class="tv-notice" id="tv-notice" style="display:none;">
@@ -276,23 +289,56 @@
     </div>
 
     <script>
-        function genererPoules() {
+        function genererPoulesAléatoires() {
             var nbPoules = parseInt(document.getElementById('nb-poules').value);
-            var nbJoueurs = parseInt(document.getElementById('nb-joueurs').value);
+            var textJoueurs = document.getElementById('liste-joueurs').value;
             var container = document.getElementById('poules-container');
             
-            container.innerHTML = '';
-            var alphabet = "ABCDEFGH";
+            // Nettoyage de la liste des joueurs entrés (filtre les lignes vides)
+            var joueurs = textJoueurs.split('\n')
+                .map(function(name) { return name.trim(); })
+                .filter(function(name) { return name.length > 0; });
 
-            for (var i = 0; i < nbPoules; i++) {
-                var nomPoule = "Poule " + alphabet[i];
-                
+            // Si aucune liste n'est fournie, on crée des joueurs fictifs pour dépanner
+            if (joueurs.length === 0) {
+                alert("Veuillez entrer au moins quelques noms de joueurs dans la zone de texte.");
+                return;
+            }
+
+            // Algorithme de mélange de Fisher-Yates (Aléatoire parfait)
+            for (var i = joueurs.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = joueurs[i];
+                joueurs[i] = joueurs[j];
+                joueurs[j] = temp;
+            }
+
+            // Création des structures de poules vides
+            var poules = [];
+            var alphabet = "ABCDEFGH";
+            for (var p = 0; p < nbPoules; p++) {
+                poules.push({
+                    nom: "Poule " + alphabet[p],
+                    membres: []
+                });
+            }
+
+            // Distribution équitable des joueurs alternée (Poule A, Poule B, Poule C...)
+            for (var k = 0; k < joueurs.length; k++) {
+                var indexPoule = k % nbPoules;
+                poules[indexPoule].membres.push(joueurs[k]);
+            }
+
+            // Rendu HTML sur la page
+            container.innerHTML = '';
+
+            poules.forEach(function(poule) {
                 var pouleCard = document.createElement('div');
                 pouleCard.className = 'poule-card';
                 
                 var pouleHeader = document.createElement('div');
                 pouleHeader.className = 'poule-header';
-                pouleHeader.innerText = nomPoule;
+                pouleHeader.innerText = poule.nom;
                 pouleCard.appendChild(pouleHeader);
                 
                 var table = document.createElement('table');
@@ -300,21 +346,22 @@
                 
                 var tbody = document.createElement('tbody');
                 
-                for (var j = 1; j <= nbJoueurs; j++) {
+                poule.membres.forEach(function(nomJoueur) {
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td class="col-joueur"><input type="text" class="editable-name" value="Joueur ' + j + '" placeholder="Nom"></td>' +
+                    tr.innerHTML = '<td class="col-joueur"><input type="text" class="editable-name" value="' + nomJoueur + '" placeholder="Nom"></td>' +
                                    '<td class="col-stat"><input type="number" class="input-stat" value="0" min="0"></td>' +
                                    '<td class="col-stat"><input type="number" class="input-stat" value="0" min="0"></td>' +
                                    '<td class="col-stat"><input type="text" class="input-stat" value="0"></td>' +
                                    '<td class="col-pts"><input type="number" class="input-stat" value="0" min="0"></td>';
                     tbody.appendChild(tr);
-                }
+                });
                 
                 table.appendChild(tbody);
                 pouleCard.appendChild(table);
                 container.appendChild(pouleCard);
-            }
+            });
 
+            // Affichage du bouton Mode TV
             document.getElementById('tv-btn').style.display = 'block';
             document.getElementById('tv-notice').style.display = 'block';
         }
