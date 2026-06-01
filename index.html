@@ -9,6 +9,7 @@
             --bg-color: #0f0c1b;
             --card-bg: #1d1836;
             --accent-color: #00ff87;
+            --danger-color: #ff4a4a;
             --text-color: #ffffff;
             --text-muted: #a3a0b8;
             --border-color: #2f2954;
@@ -137,6 +138,20 @@
             transform: scale(1.01);
         }
 
+        button.btn-danger {
+            background: rgba(255, 74, 74, 0.1);
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 10px;
+        }
+        button.btn-danger:hover {
+            background: var(--danger-color);
+            color: #ffffff;
+        }
+
         button.btn-secondary {
             background: transparent;
             border: 1px solid var(--text-muted);
@@ -164,7 +179,7 @@
             border-radius: 12px;
             border: 1px solid var(--border-color);
             padding: 20px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 24 rgba(0,0,0,0.3);
         }
 
         .poule-header {
@@ -254,12 +269,12 @@
         <button class="btn-secondary btn-toggle-view" id="tv-btn" onclick="toggleTVMode()" style="display:none;">📺 Mode Écran TV</button>
     </header>
 
-    <!-- Configuteur -->
+    <!-- Configurateur -->
     <div class="config-panel" id="setup-panel">
         <div class="config-title">⚙️ Configuration & Tirage au sort des Poules</div>
         
         <div class="config-main">
-            <!-- Colonne Gauche : Réglages -->
+            <!-- Colonne Gauche -->
             <div class="config-left">
                 <div class="config-group">
                     <label for="nb-poules">Nombre de Poules souhaité</label>
@@ -289,11 +304,12 @@
                 </div>
                 
                 <button class="btn-primary" onclick="genererPoulesAléatoires()">🔀 Lancer le tirage & Générer</button>
+                <button class="btn-danger" id="reset-btn" onclick="clearTournament()" style="display:none;">⚠️ Vider la mémoire / Reset</button>
             </div>
 
-            <!-- Colonne Droite : Liste des joueurs -->
+            <!-- Colonne Droite -->
             <div class="config-right">
-                <label for="liste-joueurs" id="label-liste">Liste des Joueurs (1 nom par ligne)</label>
+                <label for="liste-joueurs">Liste des Joueurs (1 nom par ligne)</label>
                 <textarea id="liste-joueurs" rows="8" placeholder="Collez vos pseudos ici..."></textarea>
             </div>
         </div>
@@ -303,17 +319,22 @@
     <div class="grid-poules" id="poules-container"></div>
 
     <div class="tv-notice" id="tv-notice" style="display:none;">
-        Pour figer l'affichage sur le Fire Stick, cliquez sur le bouton <strong>📺 Mode Écran TV</strong> en haut à droite.
+        Sauvegarde automatique active 🟢 Pour figer l'affichage sur le Fire Stick, cliquez sur <strong>📺 Mode Écran TV</strong>.
     </div>
 
     <script>
+        // Charger le tournoi au démarrage si une sauvegarde existe
+        window.onload = function() {
+            if (localStorage.getItem('pixelArena_poulesData')) {
+                restaurerTournoi();
+            }
+        };
+
         function genererPoulesAléatoires() {
             var nbPoules = parseInt(document.getElementById('nb-poules').value);
             var maxParPoule = parseInt(document.getElementById('max-joueurs').value);
             var textJoueurs = document.getElementById('liste-joueurs').value;
-            var container = document.getElementById('poules-container');
             
-            // Nettoyage de la liste
             var joueurs = textJoueurs.split('\n')
                 .map(function(name) { return name.trim(); })
                 .filter(function(name) { return name.length > 0; });
@@ -323,13 +344,12 @@
                 return;
             }
 
-            // Vérification de la capacité maximale des poules
             if (joueurs.length > (nbPoules * maxParPoule)) {
-                alert("⚠️ Attention : Vous avez " + joueurs.length + " joueurs inscrits, mais avec votre configuration actuelle (ouvrable à " + nbPoules + " poules de " + maxParPoule + " max), vous ne pouvez accueillir que " + (nbPoules * maxParPoule) + " joueurs max. Augmentez le nombre de poules ou la limite max !");
+                alert("⚠️ Configuration impossible : " + joueurs.length + " joueurs pour seulement " + (nbPoules * maxParPoule) + " places.");
                 return;
             }
 
-            // Mélange de Fisher-Yates
+            // Mélange Aléatoire
             for (var i = joueurs.length - 1; i > 0; i--) {
                 var j = Math.floor(Math.random() * (i + 1));
                 var temp = joueurs[i];
@@ -337,41 +357,39 @@
                 joueurs[j] = temp;
             }
 
-            // Initialisation des structures de poules
             var poules = [];
             var alphabet = "ABCDEFGH";
             for (var p = 0; p < nbPoules; p++) {
-                poules.push({
-                    nom: "Poule " + alphabet[p],
-                    membres: []
-                });
+                poules.push({ nom: "Poule " + alphabet[p], membres: [] });
             }
 
-            // Distribution équitable avec respect de la limite Max
             var indexJoueur = 0;
             while (indexJoueur < joueurs.length) {
                 var aDistribue = false;
-                
                 for (var k = 0; k < nbPoules; k++) {
                     if (indexJoueur >= joueurs.length) break;
-                    
-                    // Si la poule n'a pas encore atteint son maximum, on lui donne un joueur
                     if (poules[k].membres.length < maxParPoule) {
-                        poules[k].membres.push(joueurs[indexJoueur]);
+                        poules[k].membres.push({ nom: joueurs[indexJoueur], j: 0, g: 0, diff: "0", pts: 0 });
                         indexJoueur++;
                         aDistribue = true;
                     }
                 }
-                
-                // Sécurité antiloop si toutes les poules sont pleines mais qu'il reste du monde
                 if (!aDistribue) break;
             }
 
-            // Rendu HTML
+            sauvegarderEtAfficher(poules);
+        }
+
+        function sauvegarderEtAfficher(poules) {
+            localStorage.setItem('pixelArena_poulesData', JSON.stringify(poules));
+            afficherPoules(poules);
+        }
+
+        function afficherPoules(poules) {
+            var container = document.getElementById('poules-container');
             container.innerHTML = '';
 
-            poules.forEach(function(poule) {
-                // On n'affiche pas une poule restée complètement vide
+            poules.forEach(function(poule, pIdx) {
                 if (poule.membres.length === 0) return;
 
                 var pouleCard = document.createElement('div');
@@ -387,13 +405,16 @@
                 
                 var tbody = document.createElement('tbody');
                 
-                poule.membres.forEach(function(nomJoueur) {
+                poule.membres.forEach(function(joueur, jIdx) {
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td class="col-joueur"><input type="text" class="editable-name" value="' + nomJoueur + '" placeholder="Nom"></td>' +
-                                   '<td class="col-stat"><input type="number" class="input-stat" value="0" min="0"></td>' +
-                                   '<td class="col-stat"><input type="number" class="input-stat" value="0" min="0"></td>' +
-                                   '<td class="col-stat"><input type="text" class="input-stat" value="0"></td>' +
-                                   '<td class="col-pts"><input type="number" class="input-stat" value="0" min="0"></td>';
+                    
+                    tr.innerHTML = 
+                        '<td class="col-joueur"><input type="text" class="editable-name" value="' + joueur.nom + '" onchange="updateLive(' + pIdx + ',' + jIdx + ',\'nom\',this.value)"></td>' +
+                        '<td class="col-stat"><input type="number" class="input-stat" value="' + joueur.j + '" min="0" onchange="updateLive(' + pIdx + ',' + jIdx + ',\'j\',this.value)"></td>' +
+                        '<td class="col-stat"><input type="number" class="input-stat" value="' + joueur.g + '" min="0" onchange="updateLive(' + pIdx + ',' + jIdx + ',\'g\',this.value)"></td>' +
+                        '<td class="col-stat"><input type="text" class="input-stat" value="' + joueur.diff + '" onchange="updateLive(' + pIdx + ',' + jIdx + ',\'diff\',this.value)"></td>' +
+                        '<td class="col-pts"><input type="number" class="input-stat" value="' + joueur.pts + '" min="0" onchange="updateLive(' + pIdx + ',' + jIdx + ',\'pts\',this.value)"></td>';
+                    
                     tbody.appendChild(tr);
                 });
                 
@@ -404,11 +425,37 @@
 
             document.getElementById('tv-btn').style.display = 'block';
             document.getElementById('tv-notice').style.display = 'block';
+            document.getElementById('reset-btn').style.display = 'block';
+        }
+
+        function updateLive(pIdx, jIdx, champ, valeur) {
+            var data = JSON.parse(localStorage.getItem('pixelArena_poulesData'));
+            if(champ === 'j' || champ === 'g' || champ === 'pts') {
+                data[pIdx].membres[jIdx][champ] = parseInt(valeur) || 0;
+            } else {
+                data[pIdx].membres[jIdx][champ] = valeur;
+            }
+            localStorage.setItem('pixelArena_poulesData', JSON.stringify(data));
+        }
+
+        function restaurerTournoi() {
+            var data = JSON.parse(localStorage.getItem('pixelArena_poulesData'));
+            if(data) afficherPoules(data);
+        }
+
+        function clearTournament() {
+            if(confirm("Êtes-vous sûr de vouloir supprimer TOUTES les données de ce tournoi pour en créer un nouveau ?")) {
+                localStorage.removeItem('pixelArena_poulesData');
+                document.getElementById('poules-container').innerHTML = '';
+                document.getElementById('tv-btn').style.display = 'none';
+                document.getElementById('tv-notice').style.display = 'none';
+                document.getElementById('reset-btn').style.display = 'none';
+                document.getElementById('liste-joueurs').value = '';
+            }
         }
 
         function toggleTVMode() {
             document.body.classList.add('tv-mode');
-            
             if(!document.getElementById('exit-tv-btn')) {
                 var exitBtn = document.createElement('button');
                 exitBtn.id = 'exit-tv-btn';
