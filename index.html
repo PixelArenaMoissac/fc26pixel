@@ -9,6 +9,7 @@
             --bg-color: #0f0c1b;
             --card-bg: #1d1836;
             --accent-color: #00ff87;
+            --token-color: #ffd700; /* Couleur Or pour les jetons */
             --danger-color: #ff4a4a;
             --text-color: #ffffff;
             --text-muted: #a3a0b8;
@@ -168,7 +169,7 @@
         /* Grille des Poules */
         .grid-poules {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
             gap: 25px;
             max-width: 1600px;
             margin: 0 auto;
@@ -179,7 +180,7 @@
             border-radius: 12px;
             border: 1px solid var(--border-color);
             padding: 20px;
-            box-shadow: 0 8px 24 rgba(0,0,0,0.3);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
         }
 
         .poule-header {
@@ -208,14 +209,14 @@
 
         th {
             color: var(--text-muted);
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             text-transform: uppercase;
-            padding: 8px;
+            padding: 10px 8px;
             border-bottom: 1px solid var(--border-color);
         }
 
         td {
-            padding: 8px;
+            padding: 10px 8px;
             border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
@@ -225,7 +226,7 @@
             color: var(--text-color);
             font-weight: 600;
             width: 100%;
-            font-size: 1rem;
+            font-size: 1.05rem;
             padding: 2px 5px;
             border-radius: 4px;
         }
@@ -234,23 +235,23 @@
         .editable-name:focus { background: var(--input-bg); border-color: var(--accent-color); }
 
         .input-stat {
-            width: 45px;
+            width: 50px;
             text-align: center;
             background: transparent;
             border: 1px solid transparent;
             color: var(--text-color);
             padding: 2px;
             border-radius: 4px;
-            font-size: 1rem;
+            font-size: 1.05rem;
         }
 
         .input-stat:hover { border-color: rgba(255,255,255,0.2); }
         .input-stat:focus { background: var(--input-bg); border-color: var(--accent-color); }
 
-        .col-joueur { width: 45%; }
-        .col-stat { width: 11%; text-align: center; }
-        .col-pts { width: 11%; text-align: center; }
-        .col-pts input { color: var(--accent-color); font-weight: bold; }
+        .col-joueur { width: 50%; }
+        .col-stat { width: 25%; text-align: center; }
+        .col-tokens { width: 25%; text-align: center; }
+        .col-tokens input { color: var(--token-color); font-weight: bold; font-size: 1.2rem; }
 
         /* Mode TV */
         body.tv-mode .config-panel,
@@ -265,13 +266,13 @@
 <body>
 
     <header>
-        <h1>PIXEL ARENA <span>• TOURNOI FC26</span></h1>
+        <h1>PIXEL ARENA <span>• MODE JETONS</span></h1>
         <button class="btn-secondary btn-toggle-view" id="tv-btn" onclick="toggleTVMode()" style="display:none;">📺 Mode Écran TV</button>
     </header>
 
     <!-- Configurateur -->
     <div class="config-panel" id="setup-panel">
-        <div class="config-title">⚙️ Configuration & Tirage au sort des Poules</div>
+        <div class="config-title">⚙️ Configuration & Tirage au sort (3 jetons par joueur)</div>
         
         <div class="config-main">
             <!-- Colonne Gauche -->
@@ -319,13 +320,13 @@
     <div class="grid-poules" id="poules-container"></div>
 
     <div class="tv-notice" id="tv-notice" style="display:none;">
-        Sauvegarde automatique active 🟢 Pour figer l'affichage sur le Fire Stick, cliquez sur <strong>📺 Mode Écran TV</strong>.
+        Sauvegarde automatique active 🟢 Chaque joueur commence avec 3 jetons. Pour figer l'affichage, cliquez sur <strong>📺 Mode Écran TV</strong>.
     </div>
 
     <script>
         // Charger le tournoi au démarrage si une sauvegarde existe
         window.onload = function() {
-            if (localStorage.getItem('pixelArena_poulesData')) {
+            if (localStorage.getItem('pixelArena_poulesTokensData')) {
                 restaurerTournoi();
             }
         };
@@ -340,7 +341,7 @@
                 .filter(function(name) { return name.length > 0; });
 
             if (joueurs.length === 0) {
-                alert("Veuillez entrer au moins quelques noms de joueurs dans la zone de texte.");
+                alert("Veuillez entrer au moins quelques noms de joueurs.");
                 return;
             }
 
@@ -369,7 +370,8 @@
                 for (var k = 0; k < nbPoules; k++) {
                     if (indexJoueur >= joueurs.length) break;
                     if (poules[k].membres.length < maxParPoule) {
-                        poules[k].membres.push({ nom: joueurs[indexJoueur], j: 0, g: 0, diff: "0", pts: 0 });
+                        // Changement ici : j = 0 matchs, et tokens = 3 par défaut !
+                        poules[k].membres.push({ nom: joueurs[indexJoueur], j: 0, tokens: 3 });
                         indexJoueur++;
                         aDistribue = true;
                     }
@@ -381,7 +383,7 @@
         }
 
         function sauvegarderEtAfficher(poules) {
-            localStorage.setItem('pixelArena_poulesData', JSON.stringify(poules));
+            localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(poules));
             afficherPoules(poules);
         }
 
@@ -401,19 +403,28 @@
                 pouleCard.appendChild(pouleHeader);
                 
                 var table = document.createElement('table');
-                table.innerHTML = '<thead><tr><th class="col-joueur">Joueur</th><th class="col-stat">J</th><th class="col-stat">G</th><th class="col-stat">Diff</th><th class="col-pts">Pts</th></tr></thead>';
+                table.innerHTML = '<thead><tr><th class="col-joueur">Joueur</th><th class="col-stat">Matchs J.</th><th class="col-tokens">🪙 JETONS</th></tr></thead>';
                 
                 var tbody = document.createElement('tbody');
                 
-                poule.membres.forEach(function(joueur, jIdx) {
+                // Tri automatique des joueurs par nombre de jetons décroissant
+                var membresTries = poule.membres.map(function(m, originalIdx) {
+                    return { data: m, originalIdx: originalIdx };
+                });
+                
+                membresTries.sort(function(a, b) {
+                    return b.data.tokens - a.data.tokens;
+                });
+                
+                membresTries.forEach(function(item) {
+                    var joueur = item.data;
+                    var jIdx = item.originalIdx;
                     var tr = document.createElement('tr');
                     
                     tr.innerHTML = 
                         '<td class="col-joueur"><input type="text" class="editable-name" value="' + joueur.nom + '" onchange="updateLive(' + pIdx + ',' + jIdx + ',\'nom\',this.value)"></td>' +
                         '<td class="col-stat"><input type="number" class="input-stat" value="' + joueur.j + '" min="0" onchange="updateLive(' + pIdx + ',' + jIdx + ',\'j\',this.value)"></td>' +
-                        '<td class="col-stat"><input type="number" class="input-stat" value="' + joueur.g + '" min="0" onchange="updateLive(' + pIdx + ',' + jIdx + ',\'g\',this.value)"></td>' +
-                        '<td class="col-stat"><input type="text" class="input-stat" value="' + joueur.diff + '" onchange="updateLive(' + pIdx + ',' + jIdx + ',\'diff\',this.value)"></td>' +
-                        '<td class="col-pts"><input type="number" class="input-stat" value="' + joueur.pts + '" min="0" onchange="updateLive(' + pIdx + ',' + jIdx + ',\'pts\',this.value)"></td>';
+                        '<td class="col-tokens"><input type="number" class="input-stat" value="' + joueur.tokens + '" min="0" onchange="updateLive(' + pIdx + ',' + jIdx + ',\'tokens\',this.value)"></td>';
                     
                     tbody.appendChild(tr);
                 });
@@ -429,23 +440,28 @@
         }
 
         function updateLive(pIdx, jIdx, champ, valeur) {
-            var data = JSON.parse(localStorage.getItem('pixelArena_poulesData'));
-            if(champ === 'j' || champ === 'g' || champ === 'pts') {
+            var data = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
+            if(champ === 'j' || champ === 'tokens') {
                 data[pIdx].membres[jIdx][champ] = parseInt(valeur) || 0;
             } else {
                 data[pIdx].membres[jIdx][champ] = valeur;
             }
-            localStorage.setItem('pixelArena_poulesData', JSON.stringify(data));
+            localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(data));
+            
+            // Si on change les jetons, on rafraîchit l'affichage pour mettre à jour le classement visuel
+            if(champ === 'tokens') {
+                afficherPoules(data);
+            }
         }
 
         function restaurerTournoi() {
-            var data = JSON.parse(localStorage.getItem('pixelArena_poulesData'));
+            var data = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
             if(data) afficherPoules(data);
         }
 
         function clearTournament() {
-            if(confirm("Êtes-vous sûr de vouloir supprimer TOUTES les données de ce tournoi pour en créer un nouveau ?")) {
-                localStorage.removeItem('pixelArena_poulesData');
+            if(confirm("Supprimer ce tournoi et vider les jetons ?")) {
+                localStorage.removeItem('pixelArena_poulesTokensData');
                 document.getElementById('poules-container').innerHTML = '';
                 document.getElementById('tv-btn').style.display = 'none';
                 document.getElementById('tv-notice').style.display = 'none';
@@ -459,7 +475,7 @@
             if(!document.getElementById('exit-tv-btn')) {
                 var exitBtn = document.createElement('button');
                 exitBtn.id = 'exit-tv-btn';
-                exitBtn.innerText = "⚙️ Réouvrir la configuration";
+                exitBtn.innerText = "⚙️ Configuration";
                 exitBtn.style.position = 'fixed';
                 exitBtn.style.bottom = '10px';
                 exitBtn.style.right = '10px';
