@@ -1,1 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PIXEL ARENA - FC26 TOURNOI</title>
+    <style>
+        :root {
+            --bg-color: #0f0c1b;
+            --card-bg: #1d1836;
+            --accent-color: #00ff87;
+            --text-color: #ffffff;
+            --text-muted: #a3a0b8;
+            --border-color: #2f2954;
+        }
 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            position: relative;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-color);
+        }
+
+        header h1 span {
+            color: var(--accent-color);
+        }
+
+        .refresh-badge {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--card-bg);
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid var(--accent-color);
+            font-size: 0.85rem;
+            color: var(--accent-color);
+        }
+
+        .grid-poules {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 25px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .poule-card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+
+        .poule-header {
+            font-size: 1.4rem;
+            text-transform: uppercase;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            margin-bottom: 15px;
+        }
+
+        th {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 1.05rem;
+        }
+
+        tr:nth-child(2) td:first-child, 
+        tr:nth-child(3) td:first-child {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .col-joueur { width: 50%; font-weight: 600; }
+        .col-stat { width: 10%; text-align: center; }
+        .col-diff { width: 15%; text-align: center; }
+        .col-pts { width: 12%; text-align: center; font-weight: bold; color: var(--accent-color); }
+
+        .matches-list {
+            font-size: 0.9rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: 6px;
+            padding: 10px;
+        }
+
+        .match-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px dashed rgba(255,255,255,0.05);
+        }
+
+        .match-item:last-child { border-bottom: none; }
+        .match-players { width: 75%; color: var(--text-muted); }
+        .match-players strong { color: var(--text-color); }
+        .match-score { width: 25%; text-align: right; font-weight: bold; color: var(--accent-color); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>PIXEL ARENA <span>• TOURNOI FC26</span></h1>
+        <div class="refresh-badge" id="refresh-timer">MàJ dans 30s</div>
+    </header>
+
+    <div class="grid-poules" id="app-container">
+        </div>
+
+    <script>
+        const tournoiData = {
+            "Poule A": {
+                classement: [
+                    { nom: "Marco", j: 3, g: 2, n: 1, p: 0, bp: 8, bc: 3, pts: 7 },
+                    { nom: "Alex", j: 3, g: 2, n: 0, p: 1, bp: 6, bc: 4, pts: 6 },
+                    { nom: "Lucas", j: 3, g: 1, n: 1, p: 1, bp: 5, bc: 5, pts: 4 },
+                    { nom: "Thomas", j: 3, g: 0, n: 0, p: 3, bp: 2, bc: 9, pts: 0 }
+                ],
+                derniersMatchs: [
+                    { ext: "Marco", dom: "Thomas", score: "4 - 1" },
+                    { ext: "Alex", dom: "Lucas", score: "2 - 1" },
+                    { ext: "Marco", dom: "Alex", score: "2 - 0" }
+                ]
+            },
+            "Poule B": {
+                classement: [
+                    { nom: "Julien", j: 2, g: 2, n: 0, p: 0, bp: 5, bc: 1, pts: 6 },
+                    { nom: "Nico", j: 2, g: 1, n: 1, p: 0, bp: 4, bc: 2, pts: 4 },
+                    { nom: "Mathis", j: 2, g: 0, n: 1, p: 1, bp: 2, bc: 4, pts: 1 },
+                    { nom: "Sofiane", j: 2, g: 0, n: 0, p: 2, bp: 1, bc: 5, pts: 0 }
+                ],
+                derniersMatchs: [
+                    { ext: "Julien", dom: "Sofiane", score: "3 - 0" },
+                    { ext: "Nico", dom: "Mathis", score: "2 - 2" }
+                ]
+            },
+            "Poule C": {
+                classement: [
+                    { nom: "Antoine", j: 2, g: 1, n: 1, p: 0, bp: 3, bc: 1, pts: 4 },
+                    { nom: "Hugo", j: 2, g: 1, n: 1, p: 0, bp: 2, bc: 1, pts: 4 },
+                    { nom: "Ryan", j: 2, g: 1, n: 0, p: 1, bp: 3, bc: 3, pts: 3 },
+                    { nom: "Maxime", j: 2, g: 0, n: 0, p: 2, bp: 1, bc: 4, pts: 0 }
+                ],
+                derniersMatchs: [
+                    { ext: "Antoine", dom: "Hugo", score: "1 - 1" },
+                    { ext: "Ryan", dom: "Maxime", score: "2 - 1" }
+                ]
+            },
+            "Poule D": {
+                classement: [
+                    { nom: "Leo", j: 2, g: 2, n: 0, p: 0, bp: 6, bc: 2, pts: 6 },
+                    { nom: "Yanis", j: 2, g: 1, n: 0, p: 1, bp: 4, bc: 3, pts: 3 },
+                    { nom: "Enzo", j: 2, g: 1, n: 0, p: 1, bp: 3, bc: 4, pts: 3 },
+                    { nom: "Kevin", j: 2, g: 0, n: 0, p: 2, bp: 2, bc: 6, pts: 0 }
+                ],
+                derniersMatchs: [
+                    { ext: "Leo", dom: "Kevin", score: "4 - 1" },
+                    { ext: "Yanis", dom: "Enzo", score: "3 - 1" }
+                ]
+            }
+        };
+
+        function renderTournoi() {
+            const container = document.getElementById('app-container');
+            container.innerHTML = '';
+
+            for (const [pouleName, data] of Object.entries(tournoiData)) {
+                let pouleHTML = `
+                    <div class="poule-card">
+                        <div class="poule-header">
+                            <span>\${pouleName}</span>
+                            <span style="font-size:0.9rem; color:var(--text-muted)">Top 2 Qualifiés</span>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th class="col-joueur">Joueur</th>
+                                    <th class="col-stat">J</th>
+                                    <th class="col-stat">G</th>
+                                    <th class="col-diff">Diff</th>
+                                    <th class="col-pts">Pts</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                data.classement.forEach(j => {
+                    const diff = j.bp - j.bc;
+                    const diffSign = diff > 0 ? `+\${diff}` : diff;
+                    pouleHTML += `
+                        <tr>
+                            <td class="col-joueur">\${j.nom}</td>
+                            <td class="col-stat">\${j.j}</td>
+                            <td class="col-stat">\${j.g}</td>
+                            <td class="col-stat">\${diffSign}</td>
+                            <td class="col-pts">\${j.pts}</td>
+                        </tr>
+                    `;
+                });
+
+                pouleHTML += `
+                            </tbody>
+                        </table>
+                        <div class="matches-list">
+                            <div style="font-weight:bold; margin-bottom:5px; font-size:0.8rem; text-transform:uppercase; color:var(--text-muted)">Derniers Matchs</div>
+                `;
+
+                data.derniersMatchs.forEach(m => {
+                    pouleHTML += `
+                        <div class="match-item">
+                            <div class="match-players"><strong>\${m.dom}</strong> vs <strong>\${m.ext}</strong></div>
+                            <div class="match-score">\${m.score}</div>
+                        </div>
+                    `;
+                });
+
+                pouleHTML += `
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML += pouleHTML;
+            }
+        }
+
+        renderTournoi();
+
+        let timeLeft = 30;
+        const timerElement = document.getElementById('refresh-timer');
+        
+        setInterval(() => {
+            timeLeft--;
+            if (timeLeft <= 0) {
+                timeLeft = 30;
+                renderTournoi(); 
+            }
+            timerElement.innerText = `MàJ dans \${timeLeft}s`;
+        }, 1000);
+    </script>
+</body>
+</html>
