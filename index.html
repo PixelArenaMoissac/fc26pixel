@@ -15,6 +15,7 @@
             --text-muted: #a3a0b8;
             --border-color: #2f2954;
             --input-bg: #2a244d;
+            --bracket-bg: #151126;
         }
 
         * {
@@ -49,7 +50,7 @@
             color: var(--accent-color);
         }
 
-        /* Panneau de configuration */
+        /* Configuration */
         .config-panel {
             background: var(--card-bg);
             border: 2px solid var(--accent-color);
@@ -113,176 +114,61 @@
             outline: none;
         }
 
-        textarea {
-            resize: vertical;
-            font-family: monospace;
-            font-size: 0.95rem;
+        textarea { resize: vertical; font-family: monospace; font-size: 0.95rem; }
+        select:focus, input:focus, textarea:focus { border-color: var(--accent-color); }
+
+        .btn-container-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
         }
 
-        select:focus, input:focus, textarea:focus {
-            border-color: var(--accent-color);
-        }
-
-        button.btn-primary {
-            background: var(--accent-color);
-            color: var(--bg-color);
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            transition: transform 0.2s, opacity 0.2s;
-            text-transform: uppercase;
-            padding: 12px;
-        }
-
-        button.btn-primary:hover {
-            opacity: 0.9;
-            transform: scale(1.01);
-        }
-
-        button.btn-danger {
-            background: rgba(255, 74, 74, 0.1);
-            border: 1px solid var(--danger-color);
-            color: var(--danger-color);
-            cursor: pointer;
-            font-weight: bold;
-            text-transform: uppercase;
-            padding: 10px;
-        }
-        button.btn-danger:hover {
-            background: var(--danger-color);
-            color: #ffffff;
-        }
-
-        button.btn-secondary {
-            background: transparent;
-            border: 1px solid var(--text-muted);
-            color: var(--text-muted);
-            cursor: pointer;
-        }
-
-        .btn-sort-poule {
-            background: #2a244d;
-            border: 1px solid var(--accent-color);
-            color: var(--accent-color);
-            font-size: 0.8rem;
-            padding: 4px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            text-transform: uppercase;
-            transition: background 0.2s;
-        }
-
-        .btn-sort-poule:hover {
-            background: var(--accent-color);
-            color: var(--bg-color);
-        }
-
-        .btn-toggle-view {
-            position: absolute;
-            right: 10px;
-            top: 15px;
-        }
+        button.btn-primary { background: var(--accent-color); color: var(--bg-color); font-weight: bold; cursor: pointer; border: none; text-transform: uppercase; padding: 12px; flex: 1; }
+        button.btn-tree { background: #9d00ff; color: white; font-weight: bold; cursor: pointer; border: none; text-transform: uppercase; padding: 12px; flex: 1; }
+        button.btn-danger { background: rgba(255, 74, 74, 0.1); border: 1px solid var(--danger-color); color: var(--danger-color); cursor: pointer; font-weight: bold; text-transform: uppercase; padding: 12px; }
+        button.btn-danger:hover { background: var(--danger-color); color: #ffffff; }
+        button.btn-secondary { background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted); cursor: pointer; }
+        .btn-sort-poule { background: #2a244d; border: 1px solid var(--accent-color); color: var(--accent-color); font-size: 0.8rem; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; text-transform: uppercase; }
+        .btn-sort-poule:hover { background: var(--accent-color); color: var(--bg-color); }
+        .btn-toggle-view { position: absolute; right: 10px; top: 15px; }
 
         /* Grille des Poules */
-        .grid-poules {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-            gap: 25px;
-            max-width: 1600px;
-            margin: 0 auto;
-        }
+        .section-title { text-align: center; text-transform: uppercase; color: var(--accent-color); font-size: 1.6rem; margin: 40px 0 20px 0; letter-spacing: 1px; }
+        .grid-poules { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 25px; max-width: 1600px; margin: 0 auto; }
+        .poule-card { background-color: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+        .poule-header { font-size: 1.3rem; text-transform: uppercase; color: var(--accent-color); margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .poule-header-left { display: flex; align-items: center; gap: 12px; }
+        .poule-count { font-size: 0.85rem; color: var(--text-muted); }
 
-        .poule-card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            padding: 20px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-        }
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; padding: 10px 8px; border-bottom: 1px solid var(--border-color); }
+        td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
-        .poule-header {
-            font-size: 1.3rem;
-            text-transform: uppercase;
-            color: var(--accent-color);
-            margin-bottom: 15px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .poule-header-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .poule-count {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            text-transform: none;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        th {
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            padding: 10px 8px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        td {
-            padding: 10px 8px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .editable-name {
-            background: transparent;
-            border: 1px dashed transparent;
-            color: var(--text-color);
-            font-weight: 600;
-            width: 100%;
-            font-size: 1.05rem;
-            padding: 2px 5px;
-            border-radius: 4px;
-        }
-
-        .editable-name:hover { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.02); }
+        .editable-name { background: transparent; border: 1px dashed transparent; color: var(--text-color); font-weight: 600; width: 100%; font-size: 1.05rem; padding: 2px 5px; border-radius: 4px; }
+        .editable-name:hover { border-color: rgba(255,255,255,0.2); }
         .editable-name:focus { background: var(--input-bg); border-color: var(--accent-color); }
 
-        .input-stat {
-            width: 50px;
-            text-align: center;
-            background: transparent;
-            border: 1px solid transparent;
-            color: var(--text-color);
-            padding: 2px;
-            border-radius: 4px;
-            font-size: 1.05rem;
-        }
-
+        .input-stat { width: 50px; text-align: center; background: transparent; border: 1px solid transparent; color: var(--text-color); padding: 2px; border-radius: 4px; font-size: 1.05rem; }
         .input-stat:hover { border-color: rgba(255,255,255,0.2); }
         .input-stat:focus { background: var(--input-bg); border-color: var(--accent-color); }
-
-        .col-joueur { width: 50%; }
-        .col-stat { width: 25%; text-align: center; }
-        .col-tokens { width: 25%; text-align: center; }
+        .col-joueur { width: 50%; } .col-stat { width: 25%; text-align: center; } .col-tokens { width: 25%; text-align: center; }
         .col-tokens input { color: var(--token-color); font-weight: bold; font-size: 1.2rem; }
 
+        /* Arbre Final */
+        .bracket-wrapper { overflow-x: auto; padding: 20px 0; max-width: 1600px; margin: 0 auto; }
+        .bracket-container { display: flex; gap: 40px; min-width: 1100px; justify-content: space-between; position: relative; }
+        .bracket-round { display: flex; flex-direction: column; justify-content: space-around; flex: 1; }
+        .round-title { text-align: center; color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; }
+        
+        .matchup { background: var(--bracket-bg); border: 1px solid var(--border-color); border-radius: 8px; margin: 15px 0; padding: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); width: 240px; }
+        .matchup-team { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; }
+        .matchup-team:first-child { border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .matchup-team input.team-name { background: transparent; border: none; color: white; width: 150px; font-size: 0.95rem; text-overflow: ellipsis; font-weight: 500; pointer-events: none; }
+        .matchup-team input.team-score { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--accent-color); width: 40px; text-align: center; font-weight: bold; border-radius: 4px; padding: 3px; }
+        .matchup-team input.team-score:focus { border-color: var(--accent-color); }
+
         /* Mode TV */
-        body.tv-mode .config-panel,
-        body.tv-mode .btn-toggle-view,
-        body.tv-mode .btn-sort-poule {
-            display: none !important;
-        }
+        body.tv-mode .config-panel, body.tv-mode .btn-toggle-view, body.tv-mode .btn-sort-poule, body.tv-mode .btn-tree { display: none !important; }
         body.tv-mode header { margin-bottom: 40px; }
         .tv-notice { text-align: center; font-size: 0.9rem; color: var(--text-muted); margin-top: 20px; }
         body.tv-mode .tv-notice { display: none; }
@@ -291,61 +177,56 @@
 <body>
 
     <header>
-        <h1>PIXEL ARENA <span>• MODE JETONS</span></h1>
-        <button class="btn-secondary btn-toggle-view" id="tv-btn" onclick="toggleTVMode()" style="display:none;">📺 Mode Écran TV</button>
+        <h1>PIXEL ARENA <span>• COMPÈTE</span></h1>
+        <button class="btn-secondary btn-toggle-view" id="tv-btn" onclick="toggleTVMode()" style="display:none;">📺 Écran TV</button>
     </header>
 
-    <!-- Configurateur -->
     <div class="config-panel" id="setup-panel">
-        <div class="config-title">⚙️ Configuration & Tirage au sort (3 jetons par joueur)</div>
-        
+        <div class="config-title">⚙️ Gestion du Tournoi (3 jetons de départ)</div>
         <div class="config-main">
-            <!-- Colonne Gauche -->
             <div class="config-left">
                 <div class="config-group">
                     <label for="nb-poules">Nombre de Poules souhaité</label>
                     <select id="nb-poules">
-                        <option value="1">1 Poule</option>
-                        <option value="2">2 Poules</option>
-                        <option value="3">3 Poules</option>
-                        <option value="4" selected>4 Poules</option>
-                        <option value="5">5 Poules</option>
-                        <option value="6">6 Poules</option>
-                        <option value="7">7 Poules</option>
-                        <option value="8">8 Poules</option>
+                        <option value="4">4 Poules</option>
+                        <option value="8" selected>8 Poules</option>
                     </select>
                 </div>
-
                 <div class="config-group">
                     <label for="max-joueurs">Nombre de joueurs MAX par poule</label>
                     <select id="max-joueurs">
-                        <option value="99" selected>Aucune limite</option>
-                        <option value="3">3 joueurs max</option>
-                        <option value="4">4 joueurs max</option>
+                        <option value="4" selected>4 joueurs max</option>
                         <option value="5">5 joueurs max</option>
-                        <option value="6">6 joueurs max</option>
-                        <option value="7">7 joueurs max</option>
-                        <option value="8">8 joueurs max</option>
+                        <option value="99">Aucune limite</option>
                     </select>
                 </div>
-                
-                <button class="btn-primary" onclick="genererPoulesAléatoires()">🔀 Lancer le tirage & Générer</button>
-                <button class="btn-danger" id="reset-btn" onclick="clearTournament()" style="display:none;">⚠️ Vider la mémoire / Reset</button>
+                <div class="btn-container-actions">
+                    <button class="btn-primary" onclick="genererPoulesAléatoires()">🔀 Tirage des Poules</button>
+                    <button class="btn-tree" id="tree-btn-main" onclick="genererArbreFinal()" style="display:none;">🏆 Générer l'Arbre Final</button>
+                    <button class="btn-danger" id="reset-btn" onclick="clearTournament()" style="display:none;">Reset</button>
+                </div>
             </div>
-
-            <!-- Colonne Droite -->
             <div class="config-right">
                 <label for="liste-joueurs">Liste des Joueurs (1 nom par ligne)</label>
-                <textarea id="liste-joueurs" rows="8" placeholder="Collez vos pseudos ici..."></textarea>
+                <textarea id="liste-joueurs" rows="6" placeholder="Collez vos pseudos ici..."></textarea>
             </div>
         </div>
     </div>
 
-    <!-- Conteneur des Poules -->
-    <div class="grid-poules" id="poules-container"></div>
+    <div id="poules-section" style="display:none;">
+        <div class="section-title">📊 Phases de Poules</div>
+        <div class="grid-poules" id="poules-container"></div>
+    </div>
+
+    <div id="arbre-section" style="display:none;">
+        <div class="section-title">🏆 Arbre Élimination Directe</div>
+        <div class="bracket-wrapper">
+            <div class="bracket-container" id="bracket-container"></div>
+        </div>
+    </div>
 
     <div class="tv-notice" id="tv-notice" style="display:none;">
-        Sauvegarde automatique active 🟢 Modifiez les jetons tranquillement, puis cliquez sur <strong>🏆 Classer</strong> pour ordonner les lignes.
+        Sauvegarde automatique active 🟢 Remplissez vos jetons, classez les poules puis cliquez sur "Générer l'Arbre Final".
     </div>
 
     <script>
@@ -360,25 +241,13 @@
             var maxParPoule = parseInt(document.getElementById('max-joueurs').value);
             var textJoueurs = document.getElementById('liste-joueurs').value;
             
-            var joueurs = textJoueurs.split('\n')
-                .map(function(name) { return name.trim(); })
-                .filter(function(name) { return name.length > 0; });
+            var joueurs = textJoueurs.split('\n').map(name => name.trim()).filter(name => name.length > 0);
+            if (joueurs.length === 0) { alert("Entrez des noms de joueurs."); return; }
+            if (joueurs.length > (nbPoules * maxParPoule)) { alert("⚠️ Trop de joueurs."); return; }
 
-            if (joueurs.length === 0) {
-                alert("Veuillez entrer au moins quelques noms de joueurs.");
-                return;
-            }
-
-            if (joueurs.length > (nbPoules * maxParPoule)) {
-                alert("⚠️ Configuration impossible : " + joueurs.length + " joueurs pour seulement " + (nbPoules * maxParPoule) + " places.");
-                return;
-            }
-
-            for (var i = joueurs.length - 1; i > 0; i--) {
-                var j = Math.floor(Math.random() * (i + 1));
-                var temp = joueurs[i];
-                joueurs[i] = joueurs[j];
-                joueurs[j] = temp;
+            for (let i = joueurs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [joueurs[i], joueurs[j]] = [joueurs[j], joueurs[i]];
             }
 
             var poules = [];
@@ -401,6 +270,9 @@
                 if (!aDistribue) break;
             }
 
+            localStorage.removeItem('pixelArena_treeData'); // Efface l'ancien arbre si on relance les poules
+            document.getElementById('arbre-section').style.display = 'none';
+
             sauvegarderEtAfficher(poules);
         }
 
@@ -412,40 +284,28 @@
         function afficherPoules(poules) {
             var container = document.getElementById('poules-container');
             container.innerHTML = '';
+            document.getElementById('poules-section').style.display = 'block';
 
             poules.forEach(function(poule, pIdx) {
                 if (poule.membres.length === 0) return;
-
                 var pouleCard = document.createElement('div');
                 pouleCard.className = 'poule-card';
                 
                 var pouleHeader = document.createElement('div');
                 pouleHeader.className = 'poule-header';
-                
-                // En-tête avec titre + bouton de classement
-                pouleHeader.innerHTML = 
-                    '<div class="poule-header-left">' +
-                        '<span>' + poule.nom + '</span>' +
-                        '<button class="btn-sort-poule" onclick="classerPouleManuellement(' + pIdx + ')">🏆 Classer</button>' +
-                    '</div>' +
-                    '<span class="poule-count">' + poule.membres.length + ' Joueurs</span>';
-                
+                pouleHeader.innerHTML = `<div class="poule-header-left"><span>${poule.nom}</span><button class="btn-sort-poule" onclick="classerPouleManuellement(${pIdx})">🏆 Classer</button></div><span class="poule-count">${poule.membres.length} Joueurs</span>`;
                 pouleCard.appendChild(pouleHeader);
                 
                 var table = document.createElement('table');
-                table.innerHTML = '<thead><tr><th class="col-joueur">Joueur</th><th class="col-stat">Matchs J.</th><th class="col-tokens">🪙 JETONS</th></tr></thead>';
-                
+                table.innerHTML = '<thead><tr><th class="col-joueur">Joueur</th><th class="col-stat">Matchs</th><th class="col-tokens">🪙 Jetons</th></tr></thead>';
                 var tbody = document.createElement('tbody');
                 
-                // Rendu dans l'ordre exact stocké (pas de tri automatique forcé ici)
                 poule.membres.forEach(function(joueur, jIdx) {
                     var tr = document.createElement('tr');
-                    
                     tr.innerHTML = 
-                        '<td class="col-joueur"><input type="text" class="editable-name" value="' + joueur.nom + '" onchange="updateLive(' + pIdx + ',' + jIdx + ',\'nom\',this.value)"></td>' +
-                        '<td class="col-stat"><input type="number" class="input-stat" value="' + joueur.j + '" min="0" onchange="updateLive(' + pIdx + ',' + jIdx + ',\'j\',this.value)"></td>' +
-                        '<td class="col-tokens"><input type="number" class="input-stat" value="' + joueur.tokens + '" min="0" onchange="updateLive(' + pIdx + ',' + jIdx + ',\'tokens\',this.value)"></td>';
-                    
+                        `<td class="col-joueur"><input type="text" class="editable-name" value="${joueur.nom}" onchange="updateLive(${pIdx},${jIdx},'nom',this.value)"></td>` +
+                        `<td class="col-stat"><input type="number" class="input-stat" value="${joueur.j}" min="0" onchange="updateLive(${pIdx},${jIdx},'j',this.value)"></td>` +
+                        `<td class="col-tokens"><input type="number" class="input-stat" value="${joueur.tokens}" min="0" onchange="updateLive(${pIdx},${jIdx},'tokens',this.value)"></td>`;
                     tbody.appendChild(tr);
                 });
                 
@@ -457,6 +317,7 @@
             document.getElementById('tv-btn').style.display = 'block';
             document.getElementById('tv-notice').style.display = 'block';
             document.getElementById('reset-btn').style.display = 'block';
+            document.getElementById('tree-btn-main').style.display = 'block';
         }
 
         function updateLive(pIdx, jIdx, champ, valeur) {
@@ -467,34 +328,141 @@
                 data[pIdx].membres[jIdx][champ] = valeur;
             }
             localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(data));
-            // On ne rafraîchit plus l'affichage visuel pendant la frappe
         }
 
-        // Fonction déclenchée uniquement au clic sur le bouton "Classer" d'une poule spécifique
         function classerPouleManuellement(pIdx) {
             var data = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
-            
-            // Tri uniquement les membres de la poule sélectionnée par jetons décroissants
-            data[pIdx].membres.sort(function(a, b) {
-                return b.tokens - a.tokens;
-            });
-            
-            // Enregistre l'ordre et met à jour l'écran
+            data[pIdx].membres.sort((a, b) => b.tokens - a.tokens);
             sauvegarderEtAfficher(data);
         }
 
+        // --- SECTION LOGIQUE DE L'ARBRE FINAL ---
+        function genererArbreFinal() {
+            var poules = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
+            if(!poules) return;
+
+            // Récupération automatique des qualifiés (Les 2 premiers de chaque poule)
+            var qualifies = {};
+            poules.forEach(poule => {
+                var letter = poule.nom.split(' ')[1]; // Récupère A, B, C...
+                qualifies["1er_" + letter] = poule.membres[0] ? poule.membres[0].nom : "1er Poule " + letter;
+                qualifies["2e_" + letter] = poule.membres[1] ? poule.membres[1].nom : "2e Poule " + letter;
+            });
+
+            // Construction fixe des Huitièmes de finale (1er vs 2e de poules croisées)
+            var round16 = [
+                { t1: qualifies["1er_A"] || "A1", s1: "", t2: qualifies["2e_B"] || "B2", s2: "" },
+                { t1: qualifies["1er_C"] || "C1", s1: "", t2: qualifies["2e_D"] || "D2", s2: "" },
+                { t1: qualifies["1er_E"] || "E1", s1: "", t2: qualifies["2e_F"] || "F2", s2: "" },
+                { t1: qualifies["1er_G"] || "G1", s1: "", t2: qualifies["2e_H"] || "H2", s2: "" },
+                { t1: qualifies["1er_B"] || "B1", s1: "", t2: qualifies["2e_A"] || "A2", s2: "" },
+                { t1: qualifies["1er_D"] || "D1", s1: "", t2: qualifies["2e_C"] || "C2", s2: "" },
+                { t1: qualifies["1er_F"] || "F1", s1: "", t2: qualifies["2e_E"] || "E2", s2: "" },
+                { t1: qualifies["1er_H"] || "H1", s1: "", t2: qualifies["2e_G"] || "G2", s2: "" }
+            ];
+
+            var tree = {
+                huitiemes: round16,
+                quarts: Array(4).fill(null).map(() => ({ t1: "Gagnant H.", s1: "", t2: "Gagnant H.", s2: "" })),
+                demis: Array(2).fill(null).map(() => ({ t1: "Gagnant Q.", s1: "", t2: "Gagnant Q.", s2: "" })),
+                finale: [{ t1: "Gagnant Demi", s1: "", t2: "Gagnant Demi", s2: "" }]
+            };
+
+            localStorage.setItem('pixelArena_treeData', JSON.stringify(tree));
+            afficherArbre(tree);
+        }
+
+        function afficherArbre(tree) {
+            var container = document.getElementById('bracket-container');
+            container.innerHTML = '';
+            document.getElementById('arbre-section').style.display = 'block';
+
+            var rounds = [
+                { id: 'huitiemes', title: 'Huitièmes' },
+                { id: 'quarts', title: 'Quarts de finale' },
+                { id: 'demis', title: 'Demi-finales' },
+                { id: 'finale', title: 'Finale' }
+            ];
+
+            rounds.forEach(round => {
+                var divRound = document.createElement('div');
+                divRound.className = 'bracket-round';
+                divRound.innerHTML = `<div class="round-title">${round.title}</div>`;
+
+                tree[round.id].forEach((match, mIdx) => {
+                    var divMatch = document.createElement('div');
+                    divMatch.className = 'matchup';
+                    
+                    divMatch.innerHTML = `
+                        <div class="matchup-team">
+                            <input type="text" class="team-name" value="${match.t1}">
+                            <input type="number" class="team-score" value="${match.s1}" min="0" onchange="updateTreeScore('${round.id}', ${mIdx}, 1, this.value)">
+                        </div>
+                        <div class="matchup-team">
+                            <input type="text" class="team-name" value="${match.t2}">
+                            <input type="number" class="team-score" value="${match.s2}" min="0" onchange="updateTreeScore('${round.id}', ${mIdx}, 2, this.value)">
+                        </div>
+                    `;
+                    divRound.appendChild(divMatch);
+                });
+                container.appendChild(divRound);
+            });
+        }
+
+        function updateTreeScore(roundId, matchIdx, teamNum, score) {
+            var tree = JSON.parse(localStorage.getItem('pixelArena_treeData'));
+            score = parseInt(score) || 0;
+            
+            if(teamNum === 1) tree[roundId][matchIdx].s1 = score;
+            else tree[roundId][matchIdx].s2 = score;
+
+            // Logique de progression automatique du vainqueur
+            var s1 = parseInt(tree[roundId][matchIdx].s1) || 0;
+            var s2 = parseInt(tree[roundId][matchIdx].s2) || 0;
+            var vainqueur = "";
+
+            if (s1 !== s2) {
+                vainqueur = s1 > s2 ? tree[roundId][matchIdx].t1 : tree[roundId][matchIdx].t2;
+                
+                // Envoi vers le round suivant
+                if (roundId === 'huitiemes') {
+                    let nextMatchIdx = Math.floor(matchIdx / 2);
+                    if (matchIdx % 2 === 0) tree.quarts[nextMatchIdx].t1 = vainqueur;
+                    else tree.quarts[nextMatchIdx].t2 = vainqueur;
+                } else if (roundId === 'quarts') {
+                    let nextMatchIdx = Math.floor(matchIdx / 2);
+                    if (matchIdx % 2 === 0) tree.demis[nextMatchIdx].t1 = vainqueur;
+                    else tree.demis[nextMatchIdx].t2 = vainqueur;
+                } else if (roundId === 'demis') {
+                    if (matchIdx === 0) tree.finale[0].t1 = vainqueur;
+                    else tree.finale[0].t2 = vainqueur;
+                }
+            }
+
+            localStorage.setItem('pixelArena_treeData', JSON.stringify(tree));
+            afficherArbre(tree); // Rafraîchit l'arbre visuel
+        }
+
         function restaurerTournoi() {
-            var data = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
-            if(data) afficherPoules(data);
+            var poules = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
+            if(poules) afficherPoules(poules);
+            
+            var tree = JSON.parse(localStorage.getItem('pixelArena_treeData'));
+            if(tree) afficherArbre(tree);
         }
 
         function clearTournament() {
-            if(confirm("Supprimer ce tournoi et vider les jetons ?")) {
+            if(confirm("Supprimer l'intégralité du tournoi (Poules + Arbre) ?")) {
                 localStorage.removeItem('pixelArena_poulesTokensData');
+                localStorage.removeItem('pixelArena_treeData');
                 document.getElementById('poules-container').innerHTML = '';
+                document.getElementById('bracket-container').innerHTML = '';
+                document.getElementById('poules-section').style.display = 'none';
+                document.getElementById('arbre-section').style.display = 'none';
                 document.getElementById('tv-btn').style.display = 'none';
                 document.getElementById('tv-notice').style.display = 'none';
                 document.getElementById('reset-btn').style.display = 'none';
+                document.getElementById('tree-btn-main').style.display = 'none';
                 document.getElementById('liste-joueurs').value = '';
             }
         }
@@ -509,7 +477,6 @@
                 exitBtn.style.bottom = '10px';
                 exitBtn.style.right = '10px';
                 exitBtn.style.opacity = '0.3';
-                exitBtn.style.fontSize = '0.8rem';
                 exitBtn.className = 'btn-secondary';
                 exitBtn.onclick = function() {
                     document.body.classList.remove('tv-mode');
