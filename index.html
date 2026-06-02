@@ -149,7 +149,7 @@
         .editable-name:hover { border-color: rgba(255,255,255,0.2); }
         .editable-name:focus { background: var(--input-bg); border-color: var(--accent-color); }
 
-        /* Structure du score type face-à-face */
+        /* Structure du score face-à-face */
         .match-score-block { display: inline-flex; align-items: center; gap: 3px; background: rgba(0,0,0,0.2); padding: 3px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
         .match-score-block span { font-size: 0.8rem; color: var(--text-muted); }
         .input-stat { width: 28px; text-align: center; background: var(--input-bg); border: 1px solid transparent; color: var(--text-color); padding: 2px 0; border-radius: 3px; font-size: 0.95rem; -moz-appearance: textfield; }
@@ -177,7 +177,12 @@
         .matchup { background: var(--bracket-bg); border: 1px solid var(--border-color); border-radius: 8px; margin: 15px 0; padding: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); width: 240px; }
         .matchup-team { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; }
         .matchup-team:first-child { border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .matchup-team input.team-name { background: transparent; border: none; color: white; width: 150px; font-size: 0.95rem; text-overflow: ellipsis; font-weight: 500; pointer-events: none; }
+        
+        /* Modifié pour permettre l'édition manuelle en Huitièmes si égalité */
+        .matchup-team input.team-name { background: transparent; border: none; color: white; width: 150px; font-size: 0.95rem; text-overflow: ellipsis; font-weight: 500; border-radius: 3px; padding: 2px 4px; }
+        .matchup-team input.team-name.editable-bracket { border: 1px dashed var(--accent-color); background: rgba(0,255,135,0.05); cursor: text; }
+        .matchup-team input.team-name.editable-bracket:focus { background: var(--input-bg); border-style: solid; outline: none; }
+        
         .matchup-team input.team-score { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--accent-color); width: 40px; text-align: center; font-weight: bold; border-radius: 4px; padding: 3px; }
         .matchup-team input.team-score:focus { border-color: var(--accent-color); }
 
@@ -185,8 +190,11 @@
         .matchup-team.winner input.team-score { border-color: var(--accent-color); background: rgba(0, 255, 135, 0.1); }
         .matchup-team.loser input.team-name { color: var(--text-muted) !important; opacity: 0.4; text-decoration: line-through; }
 
+        /* Alertes Égalité Barrage */
+        .tie-alert { background: rgba(255, 215, 0, 0.15); border: 1px solid var(--token-color); color: var(--token-color); padding: 12px; border-radius: 8px; margin: 20px auto; max-width: 950px; display: none; font-size: 0.95rem; line-height: 1.4; text-align: center; }
+
         /* Mode TV */
-        body.tv-mode .config-panel, body.tv-mode .btn-toggle-view, body.tv-mode .btn-sort-poule, body.tv-mode .btn-tree { display: none !important; }
+        body.tv-mode .config-panel, body.tv-mode .btn-toggle-view, body.tv-mode .btn-sort-poule, body.tv-mode .btn-tree, body.tv-mode .tie-alert { display: none !important; }
         body.tv-mode header { margin-bottom: 40px; }
         .tv-notice { text-align: center; font-size: 0.9rem; color: var(--text-muted); margin-top: 20px; }
         body.tv-mode .tv-notice { display: none; }
@@ -200,7 +208,7 @@
     </header>
 
     <div class="config-panel" id="setup-panel">
-        <div class="config-title">⚙️ Gestion du Tournoi (Suivi par Match distinct)</div>
+        <div class="config-title">⚙️ Gestion du Tournoi (Gestion des Égalités & But en Or)</div>
         <div class="config-main">
             <div class="config-left">
                 <div class="config-group">
@@ -231,6 +239,8 @@
         </div>
     </div>
 
+    <div class="tie-alert" id="tie-alert-box"></div>
+
     <div id="poules-section" style="display:none;">
         <div class="section-title">📊 Phases de Poules</div>
         <div class="grid-poules" id="poules-container"></div>
@@ -244,7 +254,7 @@
     </div>
 
     <div class="tv-notice" id="tv-notice" style="display:none;">
-        Saisie directe par match active. Entrez les buts (ex: 2 et 1). La différence (Diff.) se recalcule seule à chaque frappe 🟢
+        Saisie en direct active. En cas d'égalité parfaite entre troisièmes, les cases concernées de l'arbre restent modifiables à la main après votre match de barrage 🟢
     </div>
 
     <script>
@@ -280,7 +290,6 @@
                 for (var k = 0; k < nbPoules; k++) {
                     if (indexJoueur >= joueurs.length) break;
                     if (poules[k].membres.length < maxParPoule) {
-                        // Structure avec stockage clair match par match : bp = Buts Pour, bc = Buts Contre
                         poules[k].membres.push({ 
                             nom: joueurs[indexJoueur], 
                             m1: { bp: 0, bc: 0 },
@@ -297,6 +306,7 @@
 
             localStorage.removeItem('pixelArena_treeData');
             document.getElementById('arbre-section').style.display = 'none';
+            document.getElementById('tie-alert-box').style.display = 'none';
             sauvegarderEtAfficher(poules);
         }
 
@@ -389,7 +399,6 @@
             data[pIdx].membres[jIdx][matchKey][typeKey] = parseInt(valeur) || 0;
             localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(data));
             
-            // Recalcul visuel de la différence globale en temps réel
             var totaux = calculerTotaux(data[pIdx].membres[jIdx]);
             var diffElement = document.getElementById('poules-container').children[pIdx].querySelector('table tbody').children[jIdx].children[4].querySelector('span');
             diffElement.innerText = totaux.diff > 0 ? "+" + totaux.diff : totaux.diff;
@@ -408,12 +417,9 @@
 
         function classerPouleManuellement(pIdx) {
             var data = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
-            // Tri : 1. Jetons | 2. Différence de buts cumulée
             data[pIdx].membres.sort((a, b) => {
                 if (b.tokens !== a.tokens) return b.tokens - a.tokens;
-                var diffA = calculerTotaux(a).diff;
-                var diffB = calculerTotaux(b).diff;
-                return diffB - diffA;
+                return calculerTotaux(b).diff - calculerTotaux(a).diff;
             });
             sauvegarderEtAfficher(data);
         }
@@ -422,7 +428,6 @@
             var poules = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
             if(!poules) return;
 
-            // Tri automatique de sécurité avant extraction
             poules.forEach((poule, idx) => {
                 poules[idx].membres.sort((a, b) => {
                     if (b.tokens !== a.tokens) return b.tokens - a.tokens;
@@ -440,35 +445,68 @@
                 if(poule.membres[2]) listeTroisiemes.push(poule.membres[2]); 
             });
 
-            // Tri de tous les troisièmes : 1. Jetons | 2. Diff de buts cumulée
+            // Tri global de tous les troisièmes
             listeTroisiemes.sort((a, b) => {
                 if (b.tokens !== a.tokens) return b.tokens - a.tokens;
                 return calculerTotaux(b).diff - calculerTotaux(a).diff;
             });
 
+            // Détection de l'égalité critique au niveau du 4e qualifié (index 3)
+            var alertBox = document.getElementById('tie-alert-box');
+            alertBox.style.display = 'none';
+            var matchesEgauxIds = []; // Permet de marquer les inputs modifiables
+
+            if (listeTroisiemes.length >= 4) {
+                let cible = listeTroisiemes[3];
+                let cibleDiff = calculerTotaux(cible).diff;
+                
+                // On cherche s'il y a d'autres troisièmes qui ont exactement les mêmes stats que le 4e qualifié
+                let exAequos = listeTroisiemes.filter(t => t.tokens === cible.tokens && calculerTotaux(t).diff === cibleDiff);
+                
+                if (exAequos.length > 1) {
+                    let nomsConcerne = exAequos.map(t => t.nom).join(' / ');
+                    alertBox.innerHTML = `🚨 <strong>Égalité parfaite pour la qualification (But en Or requis) :</strong> Plusieurs troisièmes ont ${cible.tokens} jetons et ${cibleDiff > 0 ? '+' : ''}${cibleDiff} de diff (${nomsConcerne}).<br>Les cases correspondantes dans les Huitièmes ci-dessous sont modifiables 🖊️ Lancez le match et écrivez le nom du vainqueur directement dans l'arbre !`;
+                    alertBox.style.display = 'block';
+                }
+            }
+
             var meilleursTroisiemes = [];
             for (let i = 0; i < 4; i++) {
-                if(listeTroisiemes[i]) meilleursTroisiemes.push(listeTroisiemes[i].nom);
-                else meilleursTroisiemes.push(`Meilleur 3e n°${i+1}`);
+                if(listeTroisiemes[i]) {
+                    // On vérifie s'il y a égalité parfaite avec un autre pour marquer cette case comme modifiable
+                    let current = listeTroisiemes[i];
+                    let currentDiff = calculerTotaux(current).diff;
+                    let countMatches = listeTroisiemes.filter(t => t.tokens === current.tokens && calculerTotaux(t).diff === currentDiff).length;
+                    
+                    meilleursTroisiemes.push({
+                        nom: current.nom,
+                        isEditable: countMatches > 1 // Devient éditable si égalité absolue
+                    });
+                } else {
+                    meilleursTroisiemes.push({ nom: `Meilleur 3e n°${i+1}`, isEditable: true });
+                }
             }
 
             while(listePremiers.length < 6) listePremiers.push("1er Poule");
             while(listeSeconds.length < 6) listeSeconds.push("2e Poule");
 
-            // Répartition croisée équilibrée
+            // Tableau croisé de répartition
             var j = [];
-            j[0] = listePremiers[0];   j[1] = meilleursTroisiemes[3];
-            j[2] = listeSeconds[2];    j[3] = listeSeconds[3];
-            j[4] = listePremiers[4];   j[5] = meilleursTroisiemes[1];
-            j[6] = listePremiers[1];   j[7] = listeSeconds[5];
-            j[8] = listePremiers[2];   j[9] = meilleursTroisiemes[2];
-            j[10] = listeSeconds[0];   j[11] = listeSeconds[4];
-            j[12] = listePremiers[5];  j[13] = meilleursTroisiemes[0];
-            j[14] = listePremiers[3];  j[15] = listeSeconds[1];
+            j[0] = { nom: listePremiers[0], edit: false };   j[1] = meilleursTroisiemes[3];
+            j[2] = { nom: listeSeconds[2], edit: false };    j[3] = { nom: listeSeconds[3], edit: false };
+            j[4] = { nom: listePremiers[4], edit: false };   j[5] = meilleursTroisiemes[1];
+            j[6] = { nom: listePremiers[1], edit: false };   j[7] = { nom: listeSeconds[5], edit: false };
+            j[8] = { nom: listePremiers[2], edit: false };   j[9] = meilleursTroisiemes[2];
+            j[10] = { nom: listeSeconds[0], edit: false };   j[11] = { nom: listeSeconds[4], edit: false };
+            j[12] = { nom: listePremiers[5], edit: false };  j[13] = meilleursTroisiemes[0];
+            j[14] = { nom: listePremiers[3], edit: false };  j[15] = { nom: listeSeconds[1], edit: false };
 
             var round16 = [];
             for (let i = 0; i < 16; i += 2) {
-                round16.push({ t1: j[i], s1: "", t2: j[i+1], s2: "" });
+                round16.push({ 
+                    t1: j[i].nom, edit1: j[i].isEditable || false, s1: "", 
+                    t2: j[i+1].nom, edit2: j[i+1].isEditable || false, s2: "" 
+                });
             }
 
             var tree = {
@@ -513,13 +551,17 @@
                         else if (s2_int > s1_int) { classT2 = "winner"; classT1 = "loser"; }
                     }
 
+                    // On injecte la classe CSS .editable-bracket et le retrait du 'readonly' si égalité
+                    var isEdit1 = (round.id === 'huitiemes' && match.edit1) ? 'class="team-name editable-bracket"' : 'class="team-name" readonly';
+                    var isEdit2 = (round.id === 'huitiemes' && match.edit2) ? 'class="team-name editable-bracket"' : 'class="team-name" readonly';
+
                     divMatch.innerHTML = `
                         <div class="matchup-team ${classT1}">
-                            <input type="text" class="team-name" value="${match.t1}">
+                            <input type="text" ${isEdit1} value="${match.t1}" onchange="updateBracketName(${mIdx}, 1, this.value)">
                             <input type="number" class="team-score" value="${match.s1}" min="0" onchange="updateTreeScore('${round.id}', ${mIdx}, 1, this.value)">
                         </div>
                         <div class="matchup-team ${classT2}">
-                            <input type="text" class="team-name" value="${match.t2}">
+                            <input type="text" ${isEdit2} value="${match.t2}" onchange="updateBracketName(${mIdx}, 2, this.value)">
                             <input type="number" class="team-score" value="${match.s2}" min="0" onchange="updateTreeScore('${round.id}', ${mIdx}, 2, this.value)">
                         </div>
                     `;
@@ -527,6 +569,17 @@
                 });
                 container.appendChild(divRound);
             });
+        }
+
+        // Permet au gérant de modifier manuellement le nom d'un qualifié en cas de barrage direct
+        function updateBracketName(matchIdx, teamNum, newName) {
+            var tree = JSON.parse(localStorage.getItem('pixelArena_treeData'));
+            if(teamNum === 1) {
+                tree.huitiemes[matchIdx].t1 = newName;
+            } else {
+                tree.huitiemes[matchIdx].t2 = newName;
+            }
+            localStorage.setItem('pixelArena_treeData', JSON.stringify(tree));
         }
 
         function updateTreeScore(roundId, matchIdx, teamNum, score) {
@@ -582,6 +635,7 @@
                 document.getElementById('bracket-container').innerHTML = '';
                 document.getElementById('poules-section').style.display = 'none';
                 document.getElementById('arbre-section').style.display = 'none';
+                document.getElementById('tie-alert-box').style.display = 'none';
                 document.getElementById('tv-btn').style.display = 'none';
                 document.getElementById('tv-notice').style.display = 'none';
                 document.getElementById('reset-btn').style.display = 'none';
@@ -611,5 +665,3 @@
     </script>
 </body>
 </html>
-
-```
