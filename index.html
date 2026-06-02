@@ -134,25 +134,33 @@
 
         /* Grille des Poules */
         .section-title { text-align: center; text-transform: uppercase; color: var(--accent-color); font-size: 1.6rem; margin: 40px 0 20px 0; letter-spacing: 1px; }
-        .grid-poules { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 25px; max-width: 1600px; margin: 0 auto; }
+        .grid-poules { display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 25px; max-width: 1650px; margin: 0 auto; }
         .poule-card { background-color: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
         .poule-header { font-size: 1.3rem; text-transform: uppercase; color: var(--accent-color); margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
         .poule-header-left { display: flex; align-items: center; gap: 12px; }
         .poule-count { font-size: 0.85rem; color: var(--text-muted); }
 
         table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; padding: 10px 8px; border-bottom: 1px solid var(--border-color); }
-        td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        th { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; padding: 10px 4px; border-bottom: 1px solid var(--border-color); text-align: center; }
+        th.col-joueur, td.col-joueur { text-align: left; }
+        td { padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); text-align: center; }
 
         .editable-name { background: transparent; border: 1px dashed transparent; color: var(--text-color); font-weight: 600; width: 100%; font-size: 1.05rem; padding: 2px 5px; border-radius: 4px; }
         .editable-name:hover { border-color: rgba(255,255,255,0.2); }
         .editable-name:focus { background: var(--input-bg); border-color: var(--accent-color); }
 
-        .input-stat { width: 50px; text-align: center; background: transparent; border: 1px solid transparent; color: var(--text-color); padding: 2px; border-radius: 4px; font-size: 1.05rem; }
+        .input-stat { width: 45px; text-align: center; background: transparent; border: 1px solid transparent; color: var(--text-color); padding: 2px; border-radius: 4px; font-size: 1rem; }
         .input-stat:hover { border-color: rgba(255,255,255,0.2); }
         .input-stat:focus { background: var(--input-bg); border-color: var(--accent-color); }
-        .col-joueur { width: 50%; } .col-stat { width: 25%; text-align: center; } .col-tokens { width: 25%; text-align: center; }
-        .col-tokens input { color: var(--token-color); font-weight: bold; font-size: 1.2rem; }
+        
+        .span-diff { font-weight: bold; font-size: 1rem; color: var(--text-muted); }
+        .span-diff.positive { color: var(--accent-color); }
+        .span-diff.negative { color: var(--danger-color); }
+
+        .col-joueur { width: 35%; } 
+        .col-stat { width: 13%; } 
+        .col-tokens { width: 16%; }
+        .col-tokens input { color: var(--token-color); font-weight: bold; font-size: 1.1rem; }
 
         /* Arbre Final */
         .bracket-wrapper { overflow-x: auto; padding: 20px 0; max-width: 1600px; margin: 0 auto; }
@@ -187,7 +195,7 @@
     </header>
 
     <div class="config-panel" id="setup-panel">
-        <div class="config-title">⚙️ Gestion du Tournoi (3 jetons de départ)</div>
+        <div class="config-title">⚙️ Gestion du Tournoi (6 Poules de 4 • Qualification Top 16)</div>
         <div class="config-main">
             <div class="config-left">
                 <div class="config-group">
@@ -232,7 +240,7 @@
     </div>
 
     <div class="tv-notice" id="tv-notice" style="display:none;">
-        Sauvegarde automatique active 🟢 Remplissez vos jetons, classez chaque poule, puis générez l'arbre à 16 (les 2 premiers + les 4 meilleurs 3es).
+        Sauvegarde automatique active 🟢 Remplissez les jetons et les buts (BP/BC). Cliquez sur "Classer" pour mettre à jour, puis générez l'arbre final.
     </div>
 
     <script>
@@ -268,7 +276,8 @@
                 for (var k = 0; k < nbPoules; k++) {
                     if (indexJoueur >= joueurs.length) break;
                     if (poules[k].membres.length < maxParPoule) {
-                        poules[k].membres.push({ nom: joueurs[indexJoueur], j: 0, tokens: 3 });
+                        // Ajout des buts marqués (bp) et buts contre (bc)
+                        poules[k].membres.push({ nom: joueurs[indexJoueur], bp: 0, bc: 0, tokens: 3 });
                         indexJoueur++;
                         aDistribue = true;
                     }
@@ -303,14 +312,22 @@
                 pouleCard.appendChild(pouleHeader);
                 
                 var table = document.createElement('table');
-                table.innerHTML = '<thead><tr><th class="col-joueur">Joueur</th><th class="col-stat">Matchs</th><th class="col-tokens">🪙 Jetons</th></tr></thead>';
+                table.innerHTML = '<thead><tr><th class="col-joueur">Joueur</th><th class="col-stat">BP</th><th class="col-stat">BC</th><th class="col-stat">Diff.</th><th class="col-tokens">🪙 Jetons</th></tr></thead>';
                 var tbody = document.createElement('tbody');
                 
                 poule.membres.forEach(function(joueur, jIdx) {
+                    var diff = (joueur.bp || 0) - (joueur.bc || 0);
+                    var diffClass = "span-diff";
+                    if (diff > 0) diffClass += " positive";
+                    else if (diff < 0) diffClass += " negative";
+                    var diffString = diff > 0 ? "+" + diff : diff;
+
                     var tr = document.createElement('tr');
                     tr.innerHTML = 
                         `<td class="col-joueur"><input type="text" class="editable-name" value="${joueur.nom}" onchange="updateLive(${pIdx},${jIdx},'nom',this.value)"></td>` +
-                        `<td class="col-stat"><input type="number" class="input-stat" value="${joueur.j}" min="0" onchange="updateLive(${pIdx},${jIdx},'j',this.value)"></td>` +
+                        `<td class="col-stat"><input type="number" class="input-stat" value="${joueur.bp || 0}" min="0" onchange="updateLive(${pIdx},${jIdx},'bp',this.value)"></td>` +
+                        `<td class="col-stat"><input type="number" class="input-stat" value="${joueur.bc || 0}" min="0" onchange="updateLive(${pIdx},${jIdx},'bc',this.value)"></td>` +
+                        `<td class="col-stat"><span class="${diffClass}">${diffString}</span></td>` +
                         `<td class="col-tokens"><input type="number" class="input-stat" value="${joueur.tokens}" min="0" onchange="updateLive(${pIdx},${jIdx},'tokens',this.value)"></td>`;
                     tbody.appendChild(tr);
                 });
@@ -328,34 +345,48 @@
 
         function updateLive(pIdx, jIdx, champ, valeur) {
             var data = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
-            if(champ === 'j' || champ === 'tokens') {
+            if(champ === 'bp' || champ === 'bc' || champ === 'tokens') {
                 data[pIdx].membres[jIdx][champ] = parseInt(valeur) || 0;
             } else {
                 data[pIdx].membres[jIdx][champ] = valeur;
             }
             localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(data));
+            
+            // Si on modifie les buts, on rafraîchit l'affichage pour actualiser le calcul de la Diff. visuelle sans casser le focus
+            if(champ === 'bp' || champ === 'bc') {
+                var diffElement = document.getElementById('poules-container').children[pIdx].querySelector('table tbody').children[jIdx].children[3].querySelector('span');
+                var bp = parseInt(data[pIdx].membres[jIdx].bp) || 0;
+                var bc = parseInt(data[pIdx].membres[jIdx].bc) || 0;
+                var currentDiff = bp - bc;
+                diffElement.innerText = currentDiff > 0 ? "+" + currentDiff : currentDiff;
+                diffElement.className = "span-diff" + (currentDiff > 0 ? " positive" : (currentDiff < 0 ? " negative" : ""));
+            }
         }
 
         function classerPouleManuellement(pIdx) {
             var data = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
-            // Tri : Plus grand nombre de jetons en premier. En cas d'égalité, moins de matchs joués d'abord.
+            // Tri d'une poule : 1. Le nombre de Jetons (plus haut) | 2. La Différence de buts (plus haute)
             data[pIdx].membres.sort((a, b) => {
                 if (b.tokens !== a.tokens) return b.tokens - a.tokens;
-                return a.j - b.j;
+                var diffA = (a.bp || 0) - (a.bc || 0);
+                var diffB = (b.bp || 0) - (b.bc || 0);
+                return diffB - diffA;
             });
             sauvegarderEtAfficher(data);
         }
 
-        // --- CALCUL DU TOP 16 ET DES MEILLEURS 3es ---
+        // --- ENTRAINEMENT DU TOP 16 ET DES MEILLEURS 3es VIA LA DIFF DE BUTS ---
         function genererArbreFinal() {
             var poules = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
             if(!poules) return;
 
-            // 1. Classer obligatoirement toutes les poules avant de faire l'extraction
+            // Classer automatiquement toutes les poules proprement avant l'extraction
             poules.forEach((poule, idx) => {
                 poules[idx].membres.sort((a, b) => {
                     if (b.tokens !== a.tokens) return b.tokens - a.tokens;
-                    return a.j - b.j;
+                    var diffA = (a.bp || 0) - (a.bc || 0);
+                    var diffB = (b.bp || 0) - (b.bc || 0);
+                    return diffB - diffA;
                 });
             });
 
@@ -366,27 +397,29 @@
             poules.forEach(poule => {
                 if(poule.membres[0]) listePremiers.push(poule.membres[0].nom);
                 if(poule.membres[1]) listeSeconds.push(poule.membres[1].nom);
-                if(poule.membres[2]) listeTroisiemes.push(poule.membres[2]); // On garde l'objet complet pour trier
+                if(poule.membres[2]) listeTroisiemes.push(poule.membres[2]); 
             });
 
-            // Tri global de tous les troisièmes pour récupérer les 4 meilleurs
+            // Tri de TOUS les troisièmes des poules : 1. Jetons | 2. Différence de buts
             listeTroisiemes.sort((a, b) => {
                 if (b.tokens !== a.tokens) return b.tokens - a.tokens;
-                return a.j - b.j;
+                var diffA = (a.bp || 0) - (a.bc || 0);
+                var diffB = (b.bp || 0) - (b.bc || 0);
+                return diffB - diffA;
             });
 
-            // On prend le nom des 4 meilleurs troisièmes
+            // On extrait les noms des 4 meilleurs troisièmes qualifiés
             var meilleursTroisiemes = [];
             for (let i = 0; i < 4; i++) {
                 if(listeTroisiemes[i]) meilleursTroisiemes.push(listeTroisiemes[i].nom);
                 else meilleursTroisiemes.push(`Meilleur 3e n°${i+1}`);
             }
 
-            // Combler s'il manque des joueurs dans les listes principales
+            // Sécurité remplissage
             while(listePremiers.length < 6) listePremiers.push("1er Poule");
             while(listeSeconds.length < 6) listeSeconds.push("2e Poule");
 
-            // Fusion ordonnée pour créer un tableau final homogène de 16 joueurs
+            // Répartition équilibrée et croisée pour les 8 matchups des 1/8 de finale
             var j = [];
             j[0] = listePremiers[0];   j[1] = meilleursTroisiemes[3]; // Match 1
             j[2] = listeSeconds[2];    j[3] = listeSeconds[3];        // Match 2
