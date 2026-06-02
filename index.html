@@ -167,6 +167,11 @@
         .matchup-team input.team-score { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--accent-color); width: 40px; text-align: center; font-weight: bold; border-radius: 4px; padding: 3px; }
         .matchup-team input.team-score:focus { border-color: var(--accent-color); }
 
+        /* Highlight Vainqueurs / Perdants dans l'arbre */
+        .matchup-team.winner input.team-name { color: var(--accent-color) !important; font-weight: bold; }
+        .matchup-team.winner input.team-score { border-color: var(--accent-color); background: rgba(0, 255, 135, 0.1); }
+        .matchup-team.loser input.team-name { color: var(--text-muted) !important; opacity: 0.4; text-decoration: line-through; }
+
         /* Mode TV */
         body.tv-mode .config-panel, body.tv-mode .btn-toggle-view, body.tv-mode .btn-sort-poule, body.tv-mode .btn-tree { display: none !important; }
         body.tv-mode header { margin-bottom: 40px; }
@@ -189,7 +194,8 @@
                     <label for="nb-poules">Nombre de Poules souhaité</label>
                     <select id="nb-poules">
                         <option value="4">4 Poules</option>
-                        <option value="8" selected>8 Poules</option>
+                        <option value="6" selected>6 Poules</option>
+                        <option value="8">8 Poules</option>
                     </select>
                 </div>
                 <div class="config-group">
@@ -202,7 +208,7 @@
                 </div>
                 <div class="btn-container-actions">
                     <button class="btn-primary" onclick="genererPoulesAléatoires()">🔀 Tirage des Poules</button>
-                    <button class="btn-tree" id="tree-btn-main" onclick="genererArbreFinal()" style="display:none;">🏆 Générer l'Arbre Final</button>
+                    <button class="btn-tree" id="tree-btn-main" onclick="genererArbreFinal()" style="display:none;">🏆 Générer l'Arbre Final (Top 16)</button>
                     <button class="btn-danger" id="reset-btn" onclick="clearTournament()" style="display:none;">Reset</button>
                 </div>
             </div>
@@ -219,14 +225,14 @@
     </div>
 
     <div id="arbre-section" style="display:none;">
-        <div class="section-title">🏆 Arbre Élimination Directe</div>
+        <div class="section-title">🏆 Arbre Élimination Directe (1/8 de Finale)</div>
         <div class="bracket-wrapper">
             <div class="bracket-container" id="bracket-container"></div>
         </div>
     </div>
 
     <div class="tv-notice" id="tv-notice" style="display:none;">
-        Sauvegarde automatique active 🟢 Remplissez vos jetons, classez les poules puis cliquez sur "Générer l'Arbre Final".
+        Sauvegarde automatique active 🟢 Remplissez vos jetons, classez chaque poule, puis générez l'arbre à 16 (les 2 premiers + les 4 meilleurs 3es).
     </div>
 
     <script>
@@ -243,7 +249,7 @@
             
             var joueurs = textJoueurs.split('\n').map(name => name.trim()).filter(name => name.length > 0);
             if (joueurs.length === 0) { alert("Entrez des noms de joueurs."); return; }
-            if (joueurs.length > (nbPoules * maxParPoule)) { alert("⚠️ Trop de joueurs."); return; }
+            if (joueurs.length > (nbPoules * maxParPoule)) { alert("⚠️ Trop de joueurs pour la configuration sélectionnée."); return; }
 
             for (let i = joueurs.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -270,7 +276,7 @@
                 if (!aDistribue) break;
             }
 
-            localStorage.removeItem('pixelArena_treeData'); // Efface l'ancien arbre si on relance les poules
+            localStorage.removeItem('pixelArena_treeData');
             document.getElementById('arbre-section').style.display = 'none';
 
             sauvegarderEtAfficher(poules);
@@ -332,33 +338,74 @@
 
         function classerPouleManuellement(pIdx) {
             var data = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
-            data[pIdx].membres.sort((a, b) => b.tokens - a.tokens);
+            // Tri : Plus grand nombre de jetons en premier. En cas d'égalité, moins de matchs joués d'abord.
+            data[pIdx].membres.sort((a, b) => {
+                if (b.tokens !== a.tokens) return b.tokens - a.tokens;
+                return a.j - b.j;
+            });
             sauvegarderEtAfficher(data);
         }
 
-        // --- SECTION LOGIQUE DE L'ARBRE FINAL ---
+        // --- CALCUL DU TOP 16 ET DES MEILLEURS 3es ---
         function genererArbreFinal() {
             var poules = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
             if(!poules) return;
 
-            // Récupération automatique des qualifiés (Les 2 premiers de chaque poule)
-            var qualifies = {};
-            poules.forEach(poule => {
-                var letter = poule.nom.split(' ')[1]; // Récupère A, B, C...
-                qualifies["1er_" + letter] = poule.membres[0] ? poule.membres[0].nom : "1er Poule " + letter;
-                qualifies["2e_" + letter] = poule.membres[1] ? poule.membres[1].nom : "2e Poule " + letter;
+            // 1. Classer obligatoirement toutes les poules avant de faire l'extraction
+            poules.forEach((poule, idx) => {
+                poules[idx].membres.sort((a, b) => {
+                    if (b.tokens !== a.tokens) return b.tokens - a.tokens;
+                    return a.j - b.j;
+                });
             });
 
-            // Construction fixe des Huitièmes de finale (1er vs 2e de poules croisées)
+            var listePremiers = [];
+            var listeSeconds = [];
+            var listeTroisiemes = [];
+
+            poules.forEach(poule => {
+                if(poule.membres[0]) listePremiers.push(poule.membres[0].nom);
+                if(poule.membres[1]) listeSeconds.push(poule.membres[1].nom);
+                if(poule.membres[2]) listeTroisiemes.push(poule.membres[2]); // On garde l'objet complet pour trier
+            });
+
+            // Tri global de tous les troisièmes pour récupérer les 4 meilleurs
+            listeTroisiemes.sort((a, b) => {
+                if (b.tokens !== a.tokens) return b.tokens - a.tokens;
+                return a.j - b.j;
+            });
+
+            // On prend le nom des 4 meilleurs troisièmes
+            var meilleursTroisiemes = [];
+            for (let i = 0; i < 4; i++) {
+                if(listeTroisiemes[i]) meilleursTroisiemes.push(listeTroisiemes[i].nom);
+                else meilleursTroisiemes.push(`Meilleur 3e n°${i+1}`);
+            }
+
+            // Combler s'il manque des joueurs dans les listes principales
+            while(listePremiers.length < 6) listePremiers.push("1er Poule");
+            while(listeSeconds.length < 6) listeSeconds.push("2e Poule");
+
+            // Fusion ordonnée pour créer un tableau final homogène de 16 joueurs
+            var j = [];
+            j[0] = listePremiers[0];   j[1] = meilleursTroisiemes[3]; // Match 1
+            j[2] = listeSeconds[2];    j[3] = listeSeconds[3];        // Match 2
+            j[4] = listePremiers[4];   j[5] = meilleursTroisiemes[1]; // Match 3
+            j[6] = listePremiers[1];   j[7] = listeSeconds[5];        // Match 4
+            j[8] = listePremiers[2];   j[9] = meilleursTroisiemes[2]; // Match 5
+            j[10] = listeSeconds[0];   j[11] = listeSeconds[4];       // Match 6
+            j[12] = listePremiers[5];  j[13] = meilleursTroisiemes[0]; // Match 7
+            j[14] = listePremiers[3];  j[15] = listeSeconds[1];       // Match 8
+
             var round16 = [
-                { t1: qualifies["1er_A"] || "A1", s1: "", t2: qualifies["2e_B"] || "B2", s2: "" },
-                { t1: qualifies["1er_C"] || "C1", s1: "", t2: qualifies["2e_D"] || "D2", s2: "" },
-                { t1: qualifies["1er_E"] || "E1", s1: "", t2: qualifies["2e_F"] || "F2", s2: "" },
-                { t1: qualifies["1er_G"] || "G1", s1: "", t2: qualifies["2e_H"] || "H2", s2: "" },
-                { t1: qualifies["1er_B"] || "B1", s1: "", t2: qualifies["2e_A"] || "A2", s2: "" },
-                { t1: qualifies["1er_D"] || "D1", s1: "", t2: qualifies["2e_C"] || "C2", s2: "" },
-                { t1: qualifies["1er_F"] || "F1", s1: "", t2: qualifies["2e_E"] || "E2", s2: "" },
-                { t1: qualifies["1er_H"] || "H1", s1: "", t2: qualifies["2e_G"] || "G2", s2: "" }
+                { t1: j[0], s1: "", t2: j[1], s2: "" },
+                { t1: j[2], s1: "", t2: j[3], s2: "" },
+                { t1: j[4], s1: "", t2: j[5], s2: "" },
+                { t1: j[6], s1: "", t2: j[7], s2: "" },
+                { t1: j[8], s1: "", t2: j[9], s2: "" },
+                { t1: j[10], s1: "", t2: j[11], s2: "" },
+                { t1: j[12], s1: "", t2: j[13], s2: "" },
+                { t1: j[14], s1: "", t2: j[15], s2: "" }
             ];
 
             var tree = {
@@ -393,12 +440,22 @@
                     var divMatch = document.createElement('div');
                     divMatch.className = 'matchup';
                     
+                    var s1_int = parseInt(match.s1);
+                    var s2_int = parseInt(match.s2);
+                    var classT1 = "";
+                    var classT2 = "";
+
+                    if (!isNaN(s1_int) && !isNaN(s2_int)) {
+                        if (s1_int > s2_int) { classT1 = "winner"; classT2 = "loser"; }
+                        else if (s2_int > s1_int) { classT2 = "winner"; classT1 = "loser"; }
+                    }
+
                     divMatch.innerHTML = `
-                        <div class="matchup-team">
+                        <div class="matchup-team ${classT1}">
                             <input type="text" class="team-name" value="${match.t1}">
                             <input type="number" class="team-score" value="${match.s1}" min="0" onchange="updateTreeScore('${round.id}', ${mIdx}, 1, this.value)">
                         </div>
-                        <div class="matchup-team">
+                        <div class="matchup-team ${classT2}">
                             <input type="text" class="team-name" value="${match.t2}">
                             <input type="number" class="team-score" value="${match.s2}" min="0" onchange="updateTreeScore('${round.id}', ${mIdx}, 2, this.value)">
                         </div>
@@ -411,20 +468,23 @@
 
         function updateTreeScore(roundId, matchIdx, teamNum, score) {
             var tree = JSON.parse(localStorage.getItem('pixelArena_treeData'));
-            score = parseInt(score) || 0;
             
-            if(teamNum === 1) tree[roundId][matchIdx].s1 = score;
-            else tree[roundId][matchIdx].s2 = score;
-
-            // Logique de progression automatique du vainqueur
-            var s1 = parseInt(tree[roundId][matchIdx].s1) || 0;
-            var s2 = parseInt(tree[roundId][matchIdx].s2) || 0;
+            if(score === "") {
+                if(teamNum === 1) tree[roundId][matchIdx].s1 = "";
+                else tree[roundId][matchIdx].s2 = "";
+            } else {
+                let parsedScore = parseInt(score);
+                if(teamNum === 1) tree[roundId][matchIdx].s1 = isNaN(parsedScore) ? "" : parsedScore;
+                else tree[roundId][matchIdx].s2 = isNaN(parsedScore) ? "" : parsedScore;
+            }
+            
+            var s1 = tree[roundId][matchIdx].s1;
+            var s2 = tree[roundId][matchIdx].s2;
             var vainqueur = "";
 
-            if (s1 !== s2) {
-                vainqueur = s1 > s2 ? tree[roundId][matchIdx].t1 : tree[roundId][matchIdx].t2;
+            if (s1 !== "" && s2 !== "" && parseInt(s1) !== parseInt(s2)) {
+                vainqueur = parseInt(s1) > parseInt(s2) ? tree[roundId][matchIdx].t1 : tree[roundId][matchIdx].t2;
                 
-                // Envoi vers le round suivant
                 if (roundId === 'huitiemes') {
                     let nextMatchIdx = Math.floor(matchIdx / 2);
                     if (matchIdx % 2 === 0) tree.quarts[nextMatchIdx].t1 = vainqueur;
@@ -440,7 +500,7 @@
             }
 
             localStorage.setItem('pixelArena_treeData', JSON.stringify(tree));
-            afficherArbre(tree); // Rafraîchit l'arbre visuel
+            afficherArbre(tree);
         }
 
         function restaurerTournoi() {
