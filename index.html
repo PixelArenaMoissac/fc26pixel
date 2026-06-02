@@ -1,3 +1,10 @@
+C'est une excellente idée pour le suivi en direct à la volée ! Au lieu de devoir faire le calcul mental global de ton côté, tu vas pouvoir saisir directement les scores match après match (Match 1, Match 2, Match 3).
+
+En te basant sur l'interface visible dans l'image `image_2c914a.png`, j'ai modifié la structure pour remplacer les colonnes globales **BP** et **BC** par trois blocs distincts : **M1**, **M2** et **M3**. Pour chaque match, tu entres les buts marqués à gauche et les buts encaissés à droite (ex: `2 - 1`). Le script s'occupe de faire la somme totale en arrière-plan pour calculer instantanément la **Diff.** globale.
+
+Voici le code complet mis à jour à copier-coller dans ton fichier :
+
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -134,33 +141,39 @@
 
         /* Grille des Poules */
         .section-title { text-align: center; text-transform: uppercase; color: var(--accent-color); font-size: 1.6rem; margin: 40px 0 20px 0; letter-spacing: 1px; }
-        .grid-poules { display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 25px; max-width: 1650px; margin: 0 auto; }
+        .grid-poules { display: grid; grid-template-columns: repeat(auto-fit, minmax(520px, 1fr)); gap: 25px; max-width: 1750px; margin: 0 auto; }
         .poule-card { background-color: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
         .poule-header { font-size: 1.3rem; text-transform: uppercase; color: var(--accent-color); margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
         .poule-header-left { display: flex; align-items: center; gap: 12px; }
         .poule-count { font-size: 0.85rem; color: var(--text-muted); }
 
         table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; padding: 10px 4px; border-bottom: 1px solid var(--border-color); text-align: center; }
+        th { color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; padding: 10px 2px; border-bottom: 1px solid var(--border-color); text-align: center; }
         th.col-joueur, td.col-joueur { text-align: left; }
-        td { padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.05); text-align: center; }
+        td { padding: 8px 2px; border-bottom: 1px solid rgba(255,255,255,0.05); text-align: center; }
 
-        .editable-name { background: transparent; border: 1px dashed transparent; color: var(--text-color); font-weight: 600; width: 100%; font-size: 1.05rem; padding: 2px 5px; border-radius: 4px; }
+        .editable-name { background: transparent; border: 1px dashed transparent; color: var(--text-color); font-weight: 600; width: 100%; font-size: 1rem; padding: 2px 5px; border-radius: 4px; }
         .editable-name:hover { border-color: rgba(255,255,255,0.2); }
         .editable-name:focus { background: var(--input-bg); border-color: var(--accent-color); }
 
-        .input-stat { width: 45px; text-align: center; background: transparent; border: 1px solid transparent; color: var(--text-color); padding: 2px; border-radius: 4px; font-size: 1rem; }
-        .input-stat:hover { border-color: rgba(255,255,255,0.2); }
-        .input-stat:focus { background: var(--input-bg); border-color: var(--accent-color); }
+        /* Structure du score type face-à-face */
+        .match-score-block { display: inline-flex; align-items: center; gap: 3px; background: rgba(0,0,0,0.2); padding: 3px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
+        .match-score-block span { font-size: 0.8rem; color: var(--text-muted); }
+        .input-stat { width: 28px; text-align: center; background: var(--input-bg); border: 1px solid transparent; color: var(--text-color); padding: 2px 0; border-radius: 3px; font-size: 0.95rem; -moz-appearance: textfield; }
+        .input-stat::-webkit-outer-spin-button, .input-stat::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .input-stat:focus { border-color: var(--accent-color); background: rgba(0, 255, 135, 0.05); }
         
         .span-diff { font-weight: bold; font-size: 1rem; color: var(--text-muted); }
         .span-diff.positive { color: var(--accent-color); }
         .span-diff.negative { color: var(--danger-color); }
 
-        .col-joueur { width: 35%; } 
-        .col-stat { width: 13%; } 
-        .col-tokens { width: 16%; }
-        .col-tokens input { color: var(--token-color); font-weight: bold; font-size: 1.1rem; }
+        .col-joueur { width: 28%; } 
+        .col-match { width: 18%; } 
+        .col-stat { width: 8%; }
+        .col-tokens { width: 10%; }
+        .col-tokens input.input-token { color: var(--token-color); font-weight: bold; font-size: 1.05rem; width: 40px; text-align: center; background: transparent; border: 1px solid transparent;}
+        .col-tokens input.input-token:hover { border-color: rgba(255,255,255,0.2); }
+        .col-tokens input.input-token:focus { background: var(--input-bg); border-color: var(--accent-color); }
 
         /* Arbre Final */
         .bracket-wrapper { overflow-x: auto; padding: 20px 0; max-width: 1600px; margin: 0 auto; }
@@ -175,7 +188,6 @@
         .matchup-team input.team-score { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--accent-color); width: 40px; text-align: center; font-weight: bold; border-radius: 4px; padding: 3px; }
         .matchup-team input.team-score:focus { border-color: var(--accent-color); }
 
-        /* Highlight Vainqueurs / Perdants dans l'arbre */
         .matchup-team.winner input.team-name { color: var(--accent-color) !important; font-weight: bold; }
         .matchup-team.winner input.team-score { border-color: var(--accent-color); background: rgba(0, 255, 135, 0.1); }
         .matchup-team.loser input.team-name { color: var(--text-muted) !important; opacity: 0.4; text-decoration: line-through; }
@@ -195,7 +207,7 @@
     </header>
 
     <div class="config-panel" id="setup-panel">
-        <div class="config-title">⚙️ Gestion du Tournoi (6 Poules de 4 • Qualification Top 16)</div>
+        <div class="config-title">⚙️ Gestion du Tournoi (Suivi par Match distinct)</div>
         <div class="config-main">
             <div class="config-left">
                 <div class="config-group">
@@ -211,7 +223,6 @@
                     <select id="max-joueurs">
                         <option value="4" selected>4 joueurs max</option>
                         <option value="5">5 joueurs max</option>
-                        <option value="99">Aucune limite</option>
                     </select>
                 </div>
                 <div class="btn-container-actions">
@@ -240,7 +251,7 @@
     </div>
 
     <div class="tv-notice" id="tv-notice" style="display:none;">
-        Sauvegarde automatique active 🟢 Remplissez les jetons et les buts (BP/BC). Cliquez sur "Classer" pour mettre à jour, puis générez l'arbre final.
+        Saisie directe par match active. Entrez les buts (ex: 2 et 1). La différence (Diff.) se recalcule seule à chaque frappe 🟢
     </div>
 
     <script>
@@ -276,8 +287,14 @@
                 for (var k = 0; k < nbPoules; k++) {
                     if (indexJoueur >= joueurs.length) break;
                     if (poules[k].membres.length < maxParPoule) {
-                        // Ajout des buts marqués (bp) et buts contre (bc)
-                        poules[k].membres.push({ nom: joueurs[indexJoueur], bp: 0, bc: 0, tokens: 3 });
+                        // Structure avec stockage clair match par match : bp = Buts Pour, bc = Buts Contre
+                        poules[k].membres.push({ 
+                            nom: joueurs[indexJoueur], 
+                            m1: { bp: 0, bc: 0 },
+                            m2: { bp: 0, bc: 0 },
+                            m3: { bp: 0, bc: 0 },
+                            tokens: 3 
+                        });
                         indexJoueur++;
                         aDistribue = true;
                     }
@@ -287,13 +304,18 @@
 
             localStorage.removeItem('pixelArena_treeData');
             document.getElementById('arbre-section').style.display = 'none';
-
             sauvegarderEtAfficher(poules);
         }
 
         function sauvegarderEtAfficher(poules) {
             localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(poules));
             afficherPoules(poules);
+        }
+
+        function calculerTotaux(joueur) {
+            let totalBP = (joueur.m1?.bp || 0) + (joueur.m2?.bp || 0) + (joueur.m3?.bp || 0);
+            let totalBC = (joueur.m1?.bc || 0) + (joueur.m2?.bc || 0) + (joueur.m3?.bc || 0);
+            return { bp: totalBP, bc: totalBC, diff: totalBP - totalBC };
         }
 
         function afficherPoules(poules) {
@@ -312,23 +334,46 @@
                 pouleCard.appendChild(pouleHeader);
                 
                 var table = document.createElement('table');
-                table.innerHTML = '<thead><tr><th class="col-joueur">Joueur</th><th class="col-stat">BP</th><th class="col-stat">BC</th><th class="col-stat">Diff.</th><th class="col-tokens">🪙 Jetons</th></tr></thead>';
+                table.innerHTML = '<thead><tr><th class="col-joueur">Joueur</th><th class="col-match">1er Match</th><th class="col-match">2ème Match</th><th class="col-match">3ème Match</th><th class="col-stat">Diff.</th><th class="col-tokens">🪙 J.</th></tr></thead>';
                 var tbody = document.createElement('tbody');
                 
                 poule.membres.forEach(function(joueur, jIdx) {
-                    var diff = (joueur.bp || 0) - (joueur.bc || 0);
+                    var totaux = calculerTotaux(joueur);
                     var diffClass = "span-diff";
-                    if (diff > 0) diffClass += " positive";
-                    else if (diff < 0) diffClass += " negative";
-                    var diffString = diff > 0 ? "+" + diff : diff;
+                    if (totaux.diff > 0) diffClass += " positive";
+                    else if (totaux.diff < 0) diffClass += " negative";
+                    var diffString = totaux.diff > 0 ? "+" + totaux.diff : totaux.diff;
 
                     var tr = document.createElement('tr');
                     tr.innerHTML = 
                         `<td class="col-joueur"><input type="text" class="editable-name" value="${joueur.nom}" onchange="updateLive(${pIdx},${jIdx},'nom',this.value)"></td>` +
-                        `<td class="col-stat"><input type="number" class="input-stat" value="${joueur.bp || 0}" min="0" onchange="updateLive(${pIdx},${jIdx},'bp',this.value)"></td>` +
-                        `<td class="col-stat"><input type="number" class="input-stat" value="${joueur.bc || 0}" min="0" onchange="updateLive(${pIdx},${jIdx},'bc',this.value)"></td>` +
+                        
+                        `<td class="col-match">` +
+                            `<div class="match-score-block">` +
+                                `<input type="number" class="input-stat" value="${joueur.m1?.bp || 0}" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m1','bp',this.value)">` +
+                                `<span>-</span>` +
+                                `<input type="number" class="input-stat" value="${joueur.m1?.bc || 0}" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m1','bc',this.value)">` +
+                            `</div>` +
+                        `</td>` +
+                        
+                        `<td class="col-match">` +
+                            `<div class="match-score-block">` +
+                                `<input type="number" class="input-stat" value="${joueur.m2?.bp || 0}" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m2','bp',this.value)">` +
+                                `<span>-</span>` +
+                                `<input type="number" class="input-stat" value="${joueur.m2?.bc || 0}" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m2','bc',this.value)">` +
+                            `</div>` +
+                        `</td>` +
+                        
+                        `<td class="col-match">` +
+                            `<div class="match-score-block">` +
+                                `<input type="number" class="input-stat" value="${joueur.m3?.bp || 0}" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m3','bp',this.value)">` +
+                                `<span>-</span>` +
+                                `<input type="number" class="input-stat" value="${joueur.m3?.bc || 0}" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m3','bc',this.value)">` +
+                            `</div>` +
+                        `</td>` +
+                        
                         `<td class="col-stat"><span class="${diffClass}">${diffString}</span></td>` +
-                        `<td class="col-tokens"><input type="number" class="input-stat" value="${joueur.tokens}" min="0" onchange="updateLive(${pIdx},${jIdx},'tokens',this.value)"></td>`;
+                        `<td class="col-tokens"><input type="number" class="input-token" value="${joueur.tokens}" min="0" onchange="updateLive(${pIdx},${jIdx},'tokens',this.value)"></td>`;
                     tbody.appendChild(tr);
                 });
                 
@@ -343,50 +388,52 @@
             document.getElementById('tree-btn-main').style.display = 'block';
         }
 
+        function updateMatchLive(pIdx, jIdx, matchKey, typeKey, valeur) {
+            var data = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
+            if (!data[pIdx].membres[jIdx][matchKey]) {
+                data[pIdx].membres[jIdx][matchKey] = { bp: 0, bc: 0 };
+            }
+            data[pIdx].membres[jIdx][matchKey][typeKey] = parseInt(valeur) || 0;
+            localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(data));
+            
+            // Recalcul visuel de la différence globale en temps réel
+            var totaux = calculerTotaux(data[pIdx].membres[jIdx]);
+            var diffElement = document.getElementById('poules-container').children[pIdx].querySelector('table tbody').children[jIdx].children[4].querySelector('span');
+            diffElement.innerText = totaux.diff > 0 ? "+" + totaux.diff : totaux.diff;
+            diffElement.className = "span-diff" + (totaux.diff > 0 ? " positive" : (totaux.diff < 0 ? " negative" : ""));
+        }
+
         function updateLive(pIdx, jIdx, champ, valeur) {
             var data = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
-            if(champ === 'bp' || champ === 'bc' || champ === 'tokens') {
+            if(champ === 'tokens') {
                 data[pIdx].membres[jIdx][champ] = parseInt(valeur) || 0;
             } else {
                 data[pIdx].membres[jIdx][champ] = valeur;
             }
             localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(data));
-            
-            // Si on modifie les buts, on rafraîchit l'affichage pour actualiser le calcul de la Diff. visuelle sans casser le focus
-            if(champ === 'bp' || champ === 'bc') {
-                var diffElement = document.getElementById('poules-container').children[pIdx].querySelector('table tbody').children[jIdx].children[3].querySelector('span');
-                var bp = parseInt(data[pIdx].membres[jIdx].bp) || 0;
-                var bc = parseInt(data[pIdx].membres[jIdx].bc) || 0;
-                var currentDiff = bp - bc;
-                diffElement.innerText = currentDiff > 0 ? "+" + currentDiff : currentDiff;
-                diffElement.className = "span-diff" + (currentDiff > 0 ? " positive" : (currentDiff < 0 ? " negative" : ""));
-            }
         }
 
         function classerPouleManuellement(pIdx) {
             var data = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
-            // Tri d'une poule : 1. Le nombre de Jetons (plus haut) | 2. La Différence de buts (plus haute)
+            // Tri : 1. Jetons | 2. Différence de buts cumulée
             data[pIdx].membres.sort((a, b) => {
                 if (b.tokens !== a.tokens) return b.tokens - a.tokens;
-                var diffA = (a.bp || 0) - (a.bc || 0);
-                var diffB = (b.bp || 0) - (b.bc || 0);
+                var diffA = calculerTotaux(a).diff;
+                var diffB = calculerTotaux(b).diff;
                 return diffB - diffA;
             });
             sauvegarderEtAfficher(data);
         }
 
-        // --- ENTRAINEMENT DU TOP 16 ET DES MEILLEURS 3es VIA LA DIFF DE BUTS ---
         function genererArbreFinal() {
             var poules = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
             if(!poules) return;
 
-            // Classer automatiquement toutes les poules proprement avant l'extraction
+            // Tri automatique de sécurité avant extraction
             poules.forEach((poule, idx) => {
                 poules[idx].membres.sort((a, b) => {
                     if (b.tokens !== a.tokens) return b.tokens - a.tokens;
-                    var diffA = (a.bp || 0) - (a.bc || 0);
-                    var diffB = (b.bp || 0) - (b.bc || 0);
-                    return diffB - diffA;
+                    return calculerTotaux(b).diff - calculerTotaux(a).diff;
                 });
             });
 
@@ -400,46 +447,36 @@
                 if(poule.membres[2]) listeTroisiemes.push(poule.membres[2]); 
             });
 
-            // Tri de TOUS les troisièmes des poules : 1. Jetons | 2. Différence de buts
+            // Tri de tous les troisièmes : 1. Jetons | 2. Diff de buts cumulée
             listeTroisiemes.sort((a, b) => {
                 if (b.tokens !== a.tokens) return b.tokens - a.tokens;
-                var diffA = (a.bp || 0) - (a.bc || 0);
-                var diffB = (b.bp || 0) - (b.bc || 0);
-                return diffB - diffA;
+                return calculerTotaux(b).diff - calculerTotaux(a).diff;
             });
 
-            // On extrait les noms des 4 meilleurs troisièmes qualifiés
             var meilleursTroisiemes = [];
             for (let i = 0; i < 4; i++) {
                 if(listeTroisiemes[i]) meilleursTroisiemes.push(listeTroisiemes[i].nom);
                 else meilleursTroisiemes.push(`Meilleur 3e n°${i+1}`);
             }
 
-            // Sécurité remplissage
             while(listePremiers.length < 6) listePremiers.push("1er Poule");
             while(listeSeconds.length < 6) listeSeconds.push("2e Poule");
 
-            // Répartition équilibrée et croisée pour les 8 matchups des 1/8 de finale
+            // Répartition croisée équilibrée
             var j = [];
-            j[0] = listePremiers[0];   j[1] = meilleursTroisiemes[3]; // Match 1
-            j[2] = listeSeconds[2];    j[3] = listeSeconds[3];        // Match 2
-            j[4] = listePremiers[4];   j[5] = meilleursTroisiemes[1]; // Match 3
-            j[6] = listePremiers[1];   j[7] = listeSeconds[5];        // Match 4
-            j[8] = listePremiers[2];   j[9] = meilleursTroisiemes[2]; // Match 5
-            j[10] = listeSeconds[0];   j[11] = listeSeconds[4];       // Match 6
-            j[12] = listePremiers[5];  j[13] = meilleursTroisiemes[0]; // Match 7
-            j[14] = listePremiers[3];  j[15] = listeSeconds[1];       // Match 8
+            j[0] = listePremiers[0];   j[1] = meilleursTroisiemes[3];
+            j[2] = listeSeconds[2];    j[3] = listeSeconds[3];
+            j[4] = listePremiers[4];   j[5] = meilleursTroisiemes[1];
+            j[6] = listePremiers[1];   j[7] = listeSeconds[5];
+            j[8] = listePremiers[2];   j[9] = meilleursTroisiemes[2];
+            j[10] = listeSeconds[0];   j[11] = listeSeconds[4];
+            j[12] = listePremiers[5];  j[13] = meilleursTroisiemes[0];
+            j[14] = listePremiers[3];  j[15] = listeSeconds[1];
 
-            var round16 = [
-                { t1: j[0], s1: "", t2: j[1], s2: "" },
-                { t1: j[2], s1: "", t2: j[3], s2: "" },
-                { t1: j[4], s1: "", t2: j[5], s2: "" },
-                { t1: j[6], s1: "", t2: j[7], s2: "" },
-                { t1: j[8], s1: "", t2: j[9], s2: "" },
-                { t1: j[10], s1: "", t2: j[11], s2: "" },
-                { t1: j[12], s1: "", t2: j[13], s2: "" },
-                { t1: j[14], s1: "", t2: j[15], s2: "" }
-            ];
+            var round16 = [];
+            for (let i = 0; i < 16; i += 2) {
+                round16.push({ t1: j[i], s1: "", t2: j[i+1], s2: "" });
+            }
 
             var tree = {
                 huitiemes: round16,
@@ -581,3 +618,5 @@
     </script>
 </body>
 </html>
+
+```
