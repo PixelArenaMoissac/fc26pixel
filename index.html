@@ -1,10 +1,3 @@
-Voici le code complet et corrigé. J'ai intégré le système de calcul de points standard du football (**Victoire = 3 pts, Nul = 1 pt, Défaite = 0 pt**).
-
-L'attribution des points (qui correspondent à la colonne **🪙 J.** pour vos jetons de classement) se fait désormais de manière **entièrement automatique et instantanée** dès que vous saisissez ou modifiez un score dans les matchs 1, 2 ou 3. L'ancien champ de saisie manuelle des jetons a été désactivé pour éviter tout conflit avec le calcul automatique.
-
-De plus, le script tronqué à la fin a été proprement complété et finalisé.
-
-```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -378,7 +371,7 @@ De plus, le script tronqué à la fin a été proprement complété et finalisé
                 
                 poule.membres.forEach(function(joueur, jIdx) {
                     var totaux = calculerTotaux(joueur);
-                    joueur.tokens = totaux.tokens; // Sync automatique
+                    joueur.tokens = totaux.tokens;
                     
                     var diffClass = "span-diff";
                     if (totaux.diff > 0) diffClass += " positive";
@@ -440,26 +433,26 @@ De plus, le script tronqué à la fin a été proprement complété et finalisé
                 data[pIdx].membres[jIdx][matchKey][typeKey] = 0;
             } else {
                 data[pIdx].membres[jIdx][matchKey][typeKey] = parseInt(valeur) || 0;
-                data[pIdx].membres[jIdx][matchKey].joue = true;
             }
 
-            // Vérification si le match entier est vidé
-            var blockInputs = document.getElementById('poules-container').children[pIdx].querySelectorAll('table tbody').children[jIdx].querySelectorAll(`[onchange*="'${matchKey}'"]`);
-            if(blockInputs[0].value === "" && blockInputs[1].value === "") {
+            // Récupère la ligne courante directement dans la table HTML de cette poule
+            var pouleCard = document.getElementById('poules-container').children[pIdx];
+            var row = pouleCard.querySelector('table tbody').rows[jIdx];
+            
+            // On retrouve les deux inputs du match concerné pour voir s'ils sont vides
+            var inputsMatch = row.querySelectorAll(`[onchange*="'${matchKey}'"]`);
+            if(inputsMatch[0].value === "" && inputsMatch[1].value === "") {
                 data[pIdx].membres[jIdx][matchKey].joue = false;
             } else {
                 data[pIdx].membres[jIdx][matchKey].joue = true;
             }
 
-            localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(data));
-            
-            // Re-calcul en direct des totaux de la ligne
+            // Calcul en direct des totaux mis à jour
             var totaux = calculerTotaux(data[pIdx].membres[jIdx]);
             data[pIdx].membres[jIdx].tokens = totaux.tokens;
             localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(data));
 
-            var row = document.getElementById('poules-container').children[pIdx].querySelector('table tbody').children[jIdx];
-            
+            // Mise à jour visuelle instantanée des éléments HTML de la ligne
             var diffElement = row.children[4].querySelector('span');
             diffElement.innerText = totaux.diff > 0 ? "+" + totaux.diff : totaux.diff;
             diffElement.className = "span-diff" + (totaux.diff > 0 ? " positive" : (totaux.diff < 0 ? " negative" : ""));
@@ -651,7 +644,6 @@ De plus, le script tronqué à la fin a été proprement complété et finalisé
             if(teamNum === 1) tree[roundId][matchIdx].s1 = score;
             else tree[roundId][matchIdx].s2 = score;
             
-            // Réinitialiser le forçage manuel si les scores changent et ne sont plus égaux
             if(parseInt(tree[roundId][matchIdx].s1) !== parseInt(tree[roundId][matchIdx].s2)) {
                 tree[roundId][matchIdx].forced1 = false;
                 tree[roundId][matchIdx].forced2 = false;
@@ -675,19 +667,16 @@ De plus, le script tronqué à la fin a été proprement complété et finalisé
         }
 
         function propagerVainqueurs(tree) {
-            // Huitièmes -> Quarts
             for (let i = 0; i < 8; i += 2) {
                 let qIdx = Math.floor(i / 2);
                 tree.quarts[qIdx].t1 = getWinnerName(tree.huitiemes[i]);
                 tree.quarts[qIdx].t2 = getWinnerName(tree.huitiemes[i+1]);
             }
-            // Quarts -> Demis
             for (let i = 0; i < 4; i += 2) {
                 let dIdx = Math.floor(i / 2);
                 tree.demis[dIdx].t1 = getWinnerName(tree.quarts[i]);
                 tree.demis[dIdx].t2 = getWinnerName(tree.quarts[i+1]);
             }
-            // Demis -> Finale
             tree.finale[0].t1 = getWinnerName(tree.demis[0]);
             tree.finale[0].t2 = getWinnerName(tree.demis[1]);
 
@@ -710,5 +699,3 @@ De plus, le script tronqué à la fin a été proprement complété et finalisé
     </script>
 </body>
 </html>
-
-```
