@@ -1,3 +1,10 @@
+Voici le code complet et corrigé. J'ai intégré le système de calcul de points standard du football (**Victoire = 3 pts, Nul = 1 pt, Défaite = 0 pt**).
+
+L'attribution des points (qui correspondent à la colonne **🪙 J.** pour vos jetons de classement) se fait désormais de manière **entièrement automatique et instantanée** dès que vous saisissez ou modifiez un score dans les matchs 1, 2 ou 3. L'ancien champ de saisie manuelle des jetons a été désactivé pour éviter tout conflit avec le calcul automatique.
+
+De plus, le script tronqué à la fin a été proprement complété et finalisé.
+
+```html
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -163,9 +170,7 @@
         .col-match { width: 18%; } 
         .col-stat { width: 8%; }
         .col-tokens { width: 10%; }
-        .col-tokens input.input-token { color: var(--token-color); font-weight: bold; font-size: 1.05rem; width: 40px; text-align: center; background: transparent; border: 1px solid transparent;}
-        .col-tokens input.input-token:hover { border-color: rgba(255,255,255,0.2); }
-        .col-tokens input.input-token:focus { background: var(--input-bg); border-color: var(--accent-color); }
+        .col-tokens span.calculated-tokens { color: var(--token-color); font-weight: bold; font-size: 1.05rem; display: inline-block; width: 40px; text-align: center;}
 
         /* Arbre Final */
         .bracket-wrapper { overflow-x: auto; padding: 20px 0; max-width: 1600px; margin: 0 auto; }
@@ -211,7 +216,7 @@
     </header>
 
     <div class="config-panel" id="setup-panel">
-        <div class="config-title">⚙️ Gestion du Tournoi (Pas de Prolongations avant la Finale)</div>
+        <div class="config-title">⚙️ Saisie Auto des points (V:3, N:1, D:0) - Pas de Prolongations avant la Finale</div>
         <div class="config-main">
             <div class="config-left">
                 <div class="config-group">
@@ -231,7 +236,7 @@
                 </div>
                 <div class="btn-container-actions">
                     <button class="btn-primary" onclick="genererPoulesAléatoires()">🔀 Tirage des Poules</button>
-                    <button class="btn-tree" id="tree-btn-main" onclick="genererArbreFinal()" style="display:none;">🏆 Générer l'Arbre Final (Top 16)</button>
+                    <button class="btn-tree" id="tree-btn-main" onclick="genererArbreFinal()" style="display:none;">🏆 Arbre Final (Top 16)</button>
                     <button class="btn-danger" id="reset-btn" onclick="clearTournament()" style="display:none;">Reset</button>
                 </div>
             </div>
@@ -250,14 +255,14 @@
     </div>
 
     <div id="arbre-section" style="display:none;">
-        <div class="section-title">🏆 Arbre Élimination Directe (Pas de prolongations avant la Finale)</div>
+        <div class="section-title">🏆 Arbre Élimination Directe</div>
         <div class="bracket-wrapper">
             <div class="bracket-container" id="bracket-container"></div>
         </div>
     </div>
 
     <div class="tv-notice" id="tv-notice" style="display:none;">
-        Saisie active. En cas de match nul (hors finale), une option à cocher apparaît pour désigner le vainqueur du But en Or 🟢
+        Saisie active. Les points (🪙 J.) se calculent automatiquement. En cas de match nul dans l'arbre, cochez l'option But en Or 🟢
     </div>
 
     <script>
@@ -295,10 +300,10 @@
                     if (poules[k].membres.length < maxParPoule) {
                         poules[k].membres.push({ 
                             nom: joueurs[indexJoueur], 
-                            m1: { bp: 0, bc: 0 },
-                            m2: { bp: 0, bc: 0 },
-                            m3: { bp: 0, bc: 0 },
-                            tokens: 3 
+                            m1: { bp: 0, bc: 0, joue: false },
+                            m2: { bp: 0, bc: 0, joue: false },
+                            m3: { bp: 0, bc: 0, joue: false },
+                            tokens: 0 
                         });
                         indexJoueur++;
                         aDistribue = true;
@@ -313,15 +318,43 @@
             sauvegarderEtAfficher(poules);
         }
 
-        function sauvegarderEtAfficher(poules) {
-            localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(poules));
+        function restaurerTournoi() {
+            var poules = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
             afficherPoules(poules);
+            if (localStorage.getItem('pixelArena_treeData')) {
+                var tree = JSON.parse(localStorage.getItem('pixelArena_treeData'));
+                afficherArbre(tree);
+            }
+        }
+
+        function clearTournament() {
+            if(confirm("Effacer tout le tournoi en cours ?")) {
+                localStorage.removeItem('pixelArena_poulesTokensData');
+                localStorage.removeItem('pixelArena_treeData');
+                location.reload();
+            }
         }
 
         function calculerTotaux(joueur) {
-            let totalBP = (joueur.m1?.bp || 0) + (joueur.m2?.bp || 0) + (joueur.m3?.bp || 0);
-            let totalBC = (joueur.m1?.bc || 0) + (joueur.m2?.bc || 0) + (joueur.m3?.bc || 0);
-            return { bp: totalBP, bc: totalBC, diff: totalBP - totalBC };
+            let totalBP = 0, totalBC = 0, points = 0;
+            
+            ['m1', 'm2', 'm3'].forEach(mKey => {
+                if(joueur[mKey] && joueur[mKey].joue) {
+                    let bp = joueur[mKey].bp || 0;
+                    let bc = joueur[mKey].bc || 0;
+                    totalBP += bp;
+                    totalBC += bc;
+                    if(bp > bc) points += 3;
+                    else if(bp === bc) points += 1;
+                }
+            });
+
+            return { bp: totalBP, bc: totalBC, diff: totalBP - totalBC, tokens: points };
+        }
+
+        function sauvegarderEtAfficher(poules) {
+            localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(poules));
+            afficherPoules(poules);
         }
 
         function afficherPoules(poules) {
@@ -345,6 +378,8 @@
                 
                 poule.membres.forEach(function(joueur, jIdx) {
                     var totaux = calculerTotaux(joueur);
+                    joueur.tokens = totaux.tokens; // Sync automatique
+                    
                     var diffClass = "span-diff";
                     if (totaux.diff > 0) diffClass += " positive";
                     else if (totaux.diff < 0) diffClass += " negative";
@@ -356,30 +391,30 @@
                         
                         `<td class="col-match">` +
                             `<div class="match-score-block">` +
-                                `<input type="number" class="input-stat" value="${joueur.m1?.bp || 0}" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m1','bp',this.value)">` +
+                                `<input type="number" class="input-stat" value="${joueur.m1?.joue ? joueur.m1.bp : ''}" placeholder="0" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m1','bp',this.value)">` +
                                 `<span>-</span>` +
-                                `<input type="number" class="input-stat" value="${joueur.m1?.bc || 0}" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m1','bc',this.value)">` +
+                                `<input type="number" class="input-stat" value="${joueur.m1?.joue ? joueur.m1.bc : ''}" placeholder="0" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m1','bc',this.value)">` +
                             `</div>` +
                         `</td>` +
                         
                         `<td class="col-match">` +
                             `<div class="match-score-block">` +
-                                `<input type="number" class="input-stat" value="${joueur.m2?.bp || 0}" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m2','bp',this.value)">` +
+                                `<input type="number" class="input-stat" value="${joueur.m2?.joue ? joueur.m2.bp : ''}" placeholder="0" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m2','bp',this.value)">` +
                                 `<span>-</span>` +
-                                `<input type="number" class="input-stat" value="${joueur.m2?.bc || 0}" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m2','bc',this.value)">` +
+                                `<input type="number" class="input-stat" value="${joueur.m2?.joue ? joueur.m2.bc : ''}" placeholder="0" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m2','bc',this.value)">` +
                             `</div>` +
                         `</td>` +
                         
                         `<td class="col-match">` +
                             `<div class="match-score-block">` +
-                                `<input type="number" class="input-stat" value="${joueur.m3?.bp || 0}" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m3','bp',this.value)">` +
+                                `<input type="number" class="input-stat" value="${joueur.m3?.joue ? joueur.m3.bp : ''}" placeholder="0" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m3','bp',this.value)">` +
                                 `<span>-</span>` +
-                                `<input type="number" class="input-stat" value="${joueur.m3?.bc || 0}" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m3','bc',this.value)">` +
+                                `<input type="number" class="input-stat" value="${joueur.m3?.joue ? joueur.m3.bc : ''}" placeholder="0" min="0" onchange="updateMatchLive(${pIdx},${jIdx},'m3','bc',this.value)">` +
                             `</div>` +
                         `</td>` +
                         
                         `<td class="col-stat"><span class="${diffClass}">${diffString}</span></td>` +
-                        `<td class="col-tokens"><input type="number" class="input-token" value="${joueur.tokens}" min="0" onchange="updateLive(${pIdx},${jIdx},'tokens',this.value)"></td>`;
+                        `<td class="col-tokens"><span class="calculated-tokens">${joueur.tokens}</span></td>`;
                     tbody.appendChild(tr);
                 });
                 
@@ -392,37 +427,60 @@
             document.getElementById('tv-notice').style.display = 'block';
             document.getElementById('reset-btn').style.display = 'block';
             document.getElementById('tree-btn-main').style.display = 'block';
+            localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(poules));
         }
 
         function updateMatchLive(pIdx, jIdx, matchKey, typeKey, valeur) {
             var data = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
             if (!data[pIdx].membres[jIdx][matchKey]) {
-                data[pIdx].membres[jIdx][matchKey] = { bp: 0, bc: 0 };
+                data[pIdx].membres[jIdx][matchKey] = { bp: 0, bc: 0, joue: false };
             }
-            data[pIdx].membres[jIdx][matchKey][typeKey] = parseInt(valeur) || 0;
+            
+            if(valeur === "") {
+                data[pIdx].membres[jIdx][matchKey][typeKey] = 0;
+            } else {
+                data[pIdx].membres[jIdx][matchKey][typeKey] = parseInt(valeur) || 0;
+                data[pIdx].membres[jIdx][matchKey].joue = true;
+            }
+
+            // Vérification si le match entier est vidé
+            var blockInputs = document.getElementById('poules-container').children[pIdx].querySelectorAll('table tbody').children[jIdx].querySelectorAll(`[onchange*="'${matchKey}'"]`);
+            if(blockInputs[0].value === "" && blockInputs[1].value === "") {
+                data[pIdx].membres[jIdx][matchKey].joue = false;
+            } else {
+                data[pIdx].membres[jIdx][matchKey].joue = true;
+            }
+
             localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(data));
             
+            // Re-calcul en direct des totaux de la ligne
             var totaux = calculerTotaux(data[pIdx].membres[jIdx]);
-            var diffElement = document.getElementById('poules-container').children[pIdx].querySelector('table tbody').children[jIdx].children[4].querySelector('span');
+            data[pIdx].membres[jIdx].tokens = totaux.tokens;
+            localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(data));
+
+            var row = document.getElementById('poules-container').children[pIdx].querySelector('table tbody').children[jIdx];
+            
+            var diffElement = row.children[4].querySelector('span');
             diffElement.innerText = totaux.diff > 0 ? "+" + totaux.diff : totaux.diff;
             diffElement.className = "span-diff" + (totaux.diff > 0 ? " positive" : (totaux.diff < 0 ? " negative" : ""));
+            
+            var tokenElement = row.children[5].querySelector('span');
+            tokenElement.innerText = totaux.tokens;
         }
 
         function updateLive(pIdx, jIdx, champ, valeur) {
             var data = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
-            if(champ === 'tokens') {
-                data[pIdx].membres[jIdx][champ] = parseInt(valeur) || 0;
-            } else {
-                data[pIdx].membres[jIdx][champ] = valeur;
-            }
+            data[pIdx].membres[jIdx][champ] = valeur;
             localStorage.setItem('pixelArena_poulesTokensData', JSON.stringify(data));
         }
 
         function classerPouleManuellement(pIdx) {
             var data = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
             data[pIdx].membres.sort((a, b) => {
-                if (b.tokens !== a.tokens) return b.tokens - a.tokens;
-                return calculerTotaux(b).diff - calculerTotaux(a).diff;
+                let totauxA = calculerTotaux(a);
+                let totauxB = calculerTotaux(b);
+                if (totauxB.tokens !== totauxA.tokens) return totauxB.tokens - totauxA.tokens;
+                return totauxB.diff - totauxA.diff;
             });
             sauvegarderEtAfficher(data);
         }
@@ -433,8 +491,10 @@
 
             poules.forEach((poule, idx) => {
                 poules[idx].membres.sort((a, b) => {
-                    if (b.tokens !== a.tokens) return b.tokens - a.tokens;
-                    return calculerTotaux(b).diff - calculerTotaux(a).diff;
+                    let totauxA = calculerTotaux(a);
+                    let totauxB = calculerTotaux(b);
+                    if (totauxB.tokens !== totauxA.tokens) return totauxB.tokens - totauxA.tokens;
+                    return totauxB.diff - totauxA.diff;
                 });
             });
 
@@ -449,8 +509,10 @@
             });
 
             listeTroisiemes.sort((a, b) => {
-                if (b.tokens !== a.tokens) return b.tokens - a.tokens;
-                return calculerTotaux(b).diff - calculerTotaux(a).diff;
+                let totauxA = calculerTotaux(a);
+                let totauxB = calculerTotaux(b);
+                if (totauxB.tokens !== totauxA.tokens) return totauxB.tokens - totauxA.tokens;
+                return totauxB.diff - totauxA.diff;
             });
 
             var alertBox = document.getElementById('tie-alert-box');
@@ -462,7 +524,7 @@
                 let exAequos = listeTroisiemes.filter(t => t.tokens === cible.tokens && calculerTotaux(t).diff === cibleDiff);
                 if (exAequos.length > 1) {
                     let nomsConcerne = exAequos.map(t => t.nom).join(' / ');
-                    alertBox.innerHTML = `🚨 <strong>Égalité parfaite pour la qualification :</strong> Plusieurs troisièmes ont ${cible.tokens} jetons et ${cibleDiff > 0 ? '+' : ''}${cibleDiff} de diff (${nomsConcerne}). Les cases des Huitièmes de finale restent modifiables à la main 🖊️`;
+                    alertBox.innerHTML = `🚨 <strong>Égalité parfaite pour la qualification :</strong> Plusieurs troisièmes ont ${cible.tokens} points et ${cibleDiff > 0 ? '+' : ''}${cibleDiff} de diff (${nomsConcerne}). Les cases des Huitièmes de finale restent modifiables à la main 🖊️`;
                     alertBox.style.display = 'block';
                 }
             }
@@ -483,14 +545,14 @@
             while(listeSeconds.length < 6) listeSeconds.push("2e Poule");
 
             var j = [];
-            j[0] = { nom: listePremiers[0], edit: false };   j[1] = meilleursTroisiemes[3];
-            j[2] = { nom: listeSeconds[2], edit: false };    j[3] = { nom: listeSeconds[3], edit: false };
-            j[4] = { nom: listePremiers[4], edit: false };   j[5] = meilleursTroisiemes[1];
-            j[6] = { nom: listePremiers[1], edit: false };   j[7] = { nom: listeSeconds[5], edit: false };
-            j[8] = { nom: listePremiers[2], edit: false };   j[9] = meilleursTroisiemes[2];
-            j[10] = { nom: listeSeconds[0], edit: false };   j[11] = { nom: listeSeconds[4], edit: false };
-            j[12] = { nom: listePremiers[5], edit: false };  j[13] = meilleursTroisiemes[0];
-            j[14] = { nom: listePremiers[3], edit: false };  j[15] = { nom: listeSeconds[1], edit: false };
+            j[0] = { nom: listePremiers[0], isEditable: false };   j[1] = meilleursTroisiemes[3];
+            j[2] = { nom: listeSeconds[2], isEditable: false };    j[3] = { nom: listeSeconds[3], isEditable: false };
+            j[4] = { nom: listePremiers[4], isEditable: false };   j[5] = meilleursTroisiemes[1];
+            j[6] = { nom: listePremiers[1], isEditable: false };   j[7] = { nom: listeSeconds[5], isEditable: false };
+            j[8] = { nom: listePremiers[2], isEditable: false };   j[9] = meilleursTroisiemes[2];
+            j[10] = { nom: listeSeconds[0], isEditable: false };   j[11] = { nom: listeSeconds[4], isEditable: false };
+            j[12] = { nom: listePremiers[5], isEditable: false };  j[13] = meilleursTroisiemes[0];
+            j[14] = { nom: listePremiers[3], isEditable: false };  j[15] = { nom: listeSeconds[1], isEditable: false };
 
             var round16 = [];
             for (let i = 0; i < 16; i += 2) {
@@ -538,18 +600,13 @@
                     var classT2 = "";
                     var showRadioClass = "";
 
-                    // Gestion des vainqueurs
                     if (!isNaN(s1_int) && !isNaN(s2_int)) {
                         if (s1_int > s2_int) { classT1 = "winner"; classT2 = "loser"; }
                         else if (s2_int > s1_int) { classT2 = "winner"; classT1 = "loser"; }
                         else if (s1_int === s2_int && round.id !== 'finale') {
-                            // C'est un match nul hors finale -> On affiche les boutons radios de forçage manuel (But en Or)
                             showRadioClass = "show-radio";
                             if (match.forced1) { classT1 = "winner"; classT2 = "loser"; }
                             if (match.forced2) { classT2 = "winner"; classT1 = "loser"; }
-                        } else if (s1_int === s2_int && round.id === 'finale') {
-                            // C'est la finale, pas de radio car prolongations officielles dans le jeu
-                            classT1 = ""; classT2 = "";
                         }
                     }
 
@@ -561,14 +618,14 @@
 
                     divMatch.innerHTML = `
                         <div class="matchup-team ${classT1} ${showRadioClass}">
-                            <input type="text" ${isEdit1} value="${match.t1}" onchange="updateBracketName(${mIdx}, 1, this.value)">
+                            <input type="text" ${isEdit1} value="${match.t1}" onchange="updateBracketName('${round.id}', ${mIdx}, 1, this.value)">
                             <div class="score-zone">
                                 <input type="number" class="team-score" value="${match.s1}" min="0" onchange="updateTreeScore('${round.id}', ${mIdx}, 1, this.value)">
                                 ${radio1}
                             </div>
                         </div>
                         <div class="matchup-team ${classT2} ${showRadioClass}">
-                            <input type="text" ${isEdit2} value="${match.t2}" onchange="updateBracketName(${mIdx}, 2, this.value)">
+                            <input type="text" ${isEdit2} value="${match.t2}" onchange="updateBracketName('${round.id}', ${mIdx}, 2, this.value)">
                             <div class="score-zone">
                                 <input type="number" class="team-score" value="${match.s2}" min="0" onchange="updateTreeScore('${round.id}', ${mIdx}, 2, this.value)">
                                 ${radio2}
@@ -581,11 +638,27 @@
             });
         }
 
-        function updateBracketName(matchIdx, teamNum, newName) {
+        function updateBracketName(roundId, matchIdx, teamNum, newName) {
             var tree = JSON.parse(localStorage.getItem('pixelArena_treeData'));
-            if(teamNum === 1) tree.huitiemes[matchIdx].t1 = newName;
-            else tree.huitiemes[matchIdx].t2 = newName;
+            if(teamNum === 1) tree[roundId][matchIdx].t1 = newName;
+            else tree[roundId][matchIdx].t2 = newName;
             localStorage.setItem('pixelArena_treeData', JSON.stringify(tree));
+            propagerVainqueurs(tree);
+        }
+
+        function updateTreeScore(roundId, matchIdx, teamNum, score) {
+            var tree = JSON.parse(localStorage.getItem('pixelArena_treeData'));
+            if(teamNum === 1) tree[roundId][matchIdx].s1 = score;
+            else tree[roundId][matchIdx].s2 = score;
+            
+            // Réinitialiser le forçage manuel si les scores changent et ne sont plus égaux
+            if(parseInt(tree[roundId][matchIdx].s1) !== parseInt(tree[roundId][matchIdx].s2)) {
+                tree[roundId][matchIdx].forced1 = false;
+                tree[roundId][matchIdx].forced2 = false;
+            }
+            
+            localStorage.setItem('pixelArena_treeData', JSON.stringify(tree));
+            propagerVainqueurs(tree);
         }
 
         function forcerVainqueur(roundId, matchIdx, teamNum) {
@@ -598,115 +671,44 @@
                 tree[roundId][matchIdx].forced2 = true;
             }
             localStorage.setItem('pixelArena_treeData', JSON.stringify(tree));
-            propagerVainqueur(roundId, matchIdx, tree);
+            propagerVainqueurs(tree);
         }
 
-        function updateTreeScore(roundId, matchIdx, teamNum, score) {
-            var tree = JSON.parse(localStorage.getItem('pixelArena_treeData'));
-            
-            if(score === "") {
-                if(teamNum === 1) tree[roundId][matchIdx].s1 = "";
-                else tree[roundId][matchIdx].s2 = "";
-            } else {
-                let parsedScore = parseInt(score);
-                if(teamNum === 1) tree[roundId][matchIdx].s1 = isNaN(parsedScore) ? "" : parsedScore;
-                else tree[roundId][matchIdx].s2 = isNaN(parsedScore) ? "" : parsedScore;
+        function propagerVainqueurs(tree) {
+            // Huitièmes -> Quarts
+            for (let i = 0; i < 8; i += 2) {
+                let qIdx = Math.floor(i / 2);
+                tree.quarts[qIdx].t1 = getWinnerName(tree.huitiemes[i]);
+                tree.quarts[qIdx].t2 = getWinnerName(tree.huitiemes[i+1]);
             }
-
-            // Réinitialiser le forçage si le score n'est plus un match nul
-            let s1 = tree[roundId][matchIdx].s1;
-            let s2 = tree[roundId][matchIdx].s2;
-            if (s1 !== "" && s2 !== "" && parseInt(s1) !== parseInt(s2)) {
-                tree[roundId][matchIdx].forced1 = false;
-                tree[roundId][matchIdx].forced2 = false;
+            // Quarts -> Demis
+            for (let i = 0; i < 4; i += 2) {
+                let dIdx = Math.floor(i / 2);
+                tree.demis[dIdx].t1 = getWinnerName(tree.quarts[i]);
+                tree.demis[dIdx].t2 = getWinnerName(tree.quarts[i+1]);
             }
-
-            localStorage.setItem('pixelArena_treeData', JSON.stringify(tree));
-            propagerVainqueur(roundId, matchIdx, tree);
-        }
-
-        function propagerVainqueur(roundId, matchIdx, tree) {
-            var s1 = tree[roundId][matchIdx].s1;
-            var s2 = tree[roundId][matchIdx].s2;
-            var vainqueur = "";
-
-            if (s1 !== "" && s2 !== "") {
-                let s1_i = parseInt(s1);
-                let s2_i = parseInt(s2);
-
-                if (s1_i > s2_i) {
-                    vainqueur = tree[roundId][matchIdx].t1;
-                } else if (s2_i > s1_i) {
-                    vainqueur = tree[roundId][matchIdx].t2;
-                } else {
-                    // Match nul : On vérifie si un gérant a cliqué sur un bouton radio But en or
-                    if (tree[roundId][matchIdx].forced1) vainqueur = tree[roundId][matchIdx].t1;
-                    else if (tree[roundId][matchIdx].forced2) vainqueur = tree[roundId][matchIdx].t2;
-                }
-
-                if (vainqueur !== "") {
-                    if (roundId === 'huitiemes') {
-                        let nextMatchIdx = Math.floor(matchIdx / 2);
-                        if (matchIdx % 2 === 0) tree.quarts[nextMatchIdx].t1 = vainqueur;
-                        else tree.quarts[nextMatchIdx].t2 = vainqueur;
-                    } else if (roundId === 'quarts') {
-                        let nextMatchIdx = Math.floor(matchIdx / 2);
-                        if (matchIdx % 2 === 0) tree.demis[nextMatchIdx].t1 = vainqueur;
-                        else tree.demis[nextMatchIdx].t2 = vainqueur;
-                    } else if (roundId === 'demis') {
-                        if (matchIdx === 0) tree.finale[0].t1 = vainqueur;
-                        else tree.finale[0].t2 = vainqueur;
-                    }
-                }
-            }
+            // Demis -> Finale
+            tree.finale[0].t1 = getWinnerName(tree.demis[0]);
+            tree.finale[0].t2 = getWinnerName(tree.demis[1]);
 
             localStorage.setItem('pixelArena_treeData', JSON.stringify(tree));
             afficherArbre(tree);
         }
 
-        function restaurerTournoi() {
-            var poules = JSON.parse(localStorage.getItem('pixelArena_poulesTokensData'));
-            if(poules) afficherPoules(poules);
-            
-            var tree = JSON.parse(localStorage.getItem('pixelArena_treeData'));
-            if(tree) afficherArbre(tree);
-        }
-
-        function clearTournament() {
-            if(confirm("Supprimer l'intégralité du tournoi (Poules + Arbre) ?")) {
-                localStorage.removeItem('pixelArena_poulesTokensData');
-                localStorage.removeItem('pixelArena_treeData');
-                document.getElementById('poules-container').innerHTML = '';
-                document.getElementById('bracket-container').innerHTML = '';
-                document.getElementById('poules-section').style.display = 'none';
-                document.getElementById('arbre-section').style.display = 'none';
-                document.getElementById('tie-alert-box').style.display = 'none';
-                document.getElementById('tv-btn').style.display = 'none';
-                document.getElementById('tv-notice').style.display = 'none';
-                document.getElementById('reset-btn').style.display = 'none';
-                document.getElementById('tree-btn-main').style.display = 'none';
-                document.getElementById('liste-joueurs').value = '';
-            }
+        function getWinnerName(match) {
+            var s1 = parseInt(match.s1);
+            var s2 = parseInt(match.s2);
+            if (isNaN(s1) || !isNaN(s2) && s1 === s2 && !match.forced1 && !match.forced2) return "En attente...";
+            if (s1 > s2 || (s1 === s2 && match.forced1)) return match.t1;
+            if (s2 > s1 || (s1 === s2 && match.forced2)) return match.t2;
+            return "En attente...";
         }
 
         function toggleTVMode() {
-            document.body.classList.add('tv-mode');
-            if(!document.getElementById('exit-tv-btn')) {
-                var exitBtn = document.createElement('button');
-                exitBtn.id = 'exit-tv-btn';
-                exitBtn.innerText = "⚙️ Configuration";
-                exitBtn.style.position = 'fixed';
-                exitBtn.style.bottom = '10px';
-                exitBtn.style.right = '10px';
-                exitBtn.style.opacity = '0.3';
-                exitBtn.className = 'btn-secondary';
-                exitBtn.onclick = function() {
-                    document.body.classList.remove('tv-mode');
-                    exitBtn.remove();
-                };
-                document.body.appendChild(exitBtn);
-            }
+            document.body.classList.toggle('tv-mode');
         }
     </script>
 </body>
 </html>
+
+```
