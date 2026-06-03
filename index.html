@@ -149,7 +149,6 @@
         .editable-name:hover { border-color: rgba(255,255,255,0.2); }
         .editable-name:focus { background: var(--input-bg); border-color: var(--accent-color); }
 
-        /* Structure du score face-à-face */
         .match-score-block { display: inline-flex; align-items: center; gap: 3px; background: rgba(0,0,0,0.2); padding: 3px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
         .match-score-block span { font-size: 0.8rem; color: var(--text-muted); }
         .input-stat { width: 28px; text-align: center; background: var(--input-bg); border: 1px solid transparent; color: var(--text-color); padding: 2px 0; border-radius: 3px; font-size: 0.95rem; -moz-appearance: textfield; }
@@ -178,13 +177,17 @@
         .matchup-team { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; }
         .matchup-team:first-child { border-bottom: 1px solid rgba(255,255,255,0.05); }
         
-        /* Modifié pour permettre l'édition manuelle en Huitièmes si égalité */
-        .matchup-team input.team-name { background: transparent; border: none; color: white; width: 150px; font-size: 0.95rem; text-overflow: ellipsis; font-weight: 500; border-radius: 3px; padding: 2px 4px; }
+        .matchup-team input.team-name { background: transparent; border: none; color: white; width: 130px; font-size: 0.95rem; text-overflow: ellipsis; font-weight: 500; border-radius: 3px; padding: 2px 4px; }
         .matchup-team input.team-name.editable-bracket { border: 1px dashed var(--accent-color); background: rgba(0,255,135,0.05); cursor: text; }
         .matchup-team input.team-name.editable-bracket:focus { background: var(--input-bg); border-style: solid; outline: none; }
         
-        .matchup-team input.team-score { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--accent-color); width: 40px; text-align: center; font-weight: bold; border-radius: 4px; padding: 3px; }
+        .score-zone { display: flex; align-items: center; gap: 5px; }
+        .matchup-team input.team-score { background: var(--input-bg); border: 1px solid var(--border-color); color: var(--accent-color); width: 35px; text-align: center; font-weight: bold; border-radius: 4px; padding: 3px; }
         .matchup-team input.team-score:focus { border-color: var(--accent-color); }
+
+        /* Bouton radio pour le gagnant si Match Nul sans prolongation */
+        .manual-winner-check { width: 14px; height: 14px; accent-color: var(--accent-color); cursor: pointer; display: none; margin-left: 2px; }
+        .show-radio .manual-winner-check { display: inline-block; }
 
         .matchup-team.winner input.team-name { color: var(--accent-color) !important; font-weight: bold; }
         .matchup-team.winner input.team-score { border-color: var(--accent-color); background: rgba(0, 255, 135, 0.1); }
@@ -194,7 +197,7 @@
         .tie-alert { background: rgba(255, 215, 0, 0.15); border: 1px solid var(--token-color); color: var(--token-color); padding: 12px; border-radius: 8px; margin: 20px auto; max-width: 950px; display: none; font-size: 0.95rem; line-height: 1.4; text-align: center; }
 
         /* Mode TV */
-        body.tv-mode .config-panel, body.tv-mode .btn-toggle-view, body.tv-mode .btn-sort-poule, body.tv-mode .btn-tree, body.tv-mode .tie-alert { display: none !important; }
+        body.tv-mode .config-panel, body.tv-mode .btn-toggle-view, body.tv-mode .btn-sort-poule, body.tv-mode .btn-tree, body.tv-mode .tie-alert, body.tv-mode .manual-winner-check { display: none !important; }
         body.tv-mode header { margin-bottom: 40px; }
         .tv-notice { text-align: center; font-size: 0.9rem; color: var(--text-muted); margin-top: 20px; }
         body.tv-mode .tv-notice { display: none; }
@@ -208,7 +211,7 @@
     </header>
 
     <div class="config-panel" id="setup-panel">
-        <div class="config-title">⚙️ Gestion du Tournoi (Gestion des Égalités & But en Or)</div>
+        <div class="config-title">⚙️ Gestion du Tournoi (Pas de Prolongations avant la Finale)</div>
         <div class="config-main">
             <div class="config-left">
                 <div class="config-group">
@@ -247,14 +250,14 @@
     </div>
 
     <div id="arbre-section" style="display:none;">
-        <div class="section-title">🏆 Arbre Élimination Directe (1/8 de Finale)</div>
+        <div class="section-title">🏆 Arbre Élimination Directe (Pas de prolongations avant la Finale)</div>
         <div class="bracket-wrapper">
             <div class="bracket-container" id="bracket-container"></div>
         </div>
     </div>
 
     <div class="tv-notice" id="tv-notice" style="display:none;">
-        Saisie en direct active. En cas d'égalité parfaite entre troisièmes, les cases concernées de l'arbre restent modifiables à la main après votre match de barrage 🟢
+        Saisie active. En cas de match nul (hors finale), une option à cocher apparaît pour désigner le vainqueur du But en Or 🟢
     </div>
 
     <script>
@@ -445,27 +448,21 @@
                 if(poule.membres[2]) listeTroisiemes.push(poule.membres[2]); 
             });
 
-            // Tri global de tous les troisièmes
             listeTroisiemes.sort((a, b) => {
                 if (b.tokens !== a.tokens) return b.tokens - a.tokens;
                 return calculerTotaux(b).diff - calculerTotaux(a).diff;
             });
 
-            // Détection de l'égalité critique au niveau du 4e qualifié (index 3)
             var alertBox = document.getElementById('tie-alert-box');
             alertBox.style.display = 'none';
-            var matchesEgauxIds = []; // Permet de marquer les inputs modifiables
 
             if (listeTroisiemes.length >= 4) {
                 let cible = listeTroisiemes[3];
                 let cibleDiff = calculerTotaux(cible).diff;
-                
-                // On cherche s'il y a d'autres troisièmes qui ont exactement les mêmes stats que le 4e qualifié
                 let exAequos = listeTroisiemes.filter(t => t.tokens === cible.tokens && calculerTotaux(t).diff === cibleDiff);
-                
                 if (exAequos.length > 1) {
                     let nomsConcerne = exAequos.map(t => t.nom).join(' / ');
-                    alertBox.innerHTML = `🚨 <strong>Égalité parfaite pour la qualification (But en Or requis) :</strong> Plusieurs troisièmes ont ${cible.tokens} jetons et ${cibleDiff > 0 ? '+' : ''}${cibleDiff} de diff (${nomsConcerne}).<br>Les cases correspondantes dans les Huitièmes ci-dessous sont modifiables 🖊️ Lancez le match et écrivez le nom du vainqueur directement dans l'arbre !`;
+                    alertBox.innerHTML = `🚨 <strong>Égalité parfaite pour la qualification :</strong> Plusieurs troisièmes ont ${cible.tokens} jetons et ${cibleDiff > 0 ? '+' : ''}${cibleDiff} de diff (${nomsConcerne}). Les cases des Huitièmes de finale restent modifiables à la main 🖊️`;
                     alertBox.style.display = 'block';
                 }
             }
@@ -473,15 +470,10 @@
             var meilleursTroisiemes = [];
             for (let i = 0; i < 4; i++) {
                 if(listeTroisiemes[i]) {
-                    // On vérifie s'il y a égalité parfaite avec un autre pour marquer cette case comme modifiable
                     let current = listeTroisiemes[i];
                     let currentDiff = calculerTotaux(current).diff;
                     let countMatches = listeTroisiemes.filter(t => t.tokens === current.tokens && calculerTotaux(t).diff === currentDiff).length;
-                    
-                    meilleursTroisiemes.push({
-                        nom: current.nom,
-                        isEditable: countMatches > 1 // Devient éditable si égalité absolue
-                    });
+                    meilleursTroisiemes.push({ nom: current.nom, isEditable: countMatches > 1 });
                 } else {
                     meilleursTroisiemes.push({ nom: `Meilleur 3e n°${i+1}`, isEditable: true });
                 }
@@ -490,7 +482,6 @@
             while(listePremiers.length < 6) listePremiers.push("1er Poule");
             while(listeSeconds.length < 6) listeSeconds.push("2e Poule");
 
-            // Tableau croisé de répartition
             var j = [];
             j[0] = { nom: listePremiers[0], edit: false };   j[1] = meilleursTroisiemes[3];
             j[2] = { nom: listeSeconds[2], edit: false };    j[3] = { nom: listeSeconds[3], edit: false };
@@ -504,15 +495,15 @@
             var round16 = [];
             for (let i = 0; i < 16; i += 2) {
                 round16.push({ 
-                    t1: j[i].nom, edit1: j[i].isEditable || false, s1: "", 
-                    t2: j[i+1].nom, edit2: j[i+1].isEditable || false, s2: "" 
+                    t1: j[i].nom, edit1: j[i].isEditable || false, s1: "", forced1: false,
+                    t2: j[i+1].nom, edit2: j[i+1].isEditable || false, s2: "", forced2: false
                 });
             }
 
             var tree = {
                 huitiemes: round16,
-                quarts: Array(4).fill(null).map(() => ({ t1: "Gagnant H.", s1: "", t2: "Gagnant H.", s2: "" })),
-                demis: Array(2).fill(null).map(() => ({ t1: "Gagnant Q.", s1: "", t2: "Gagnant Q.", s2: "" })),
+                quarts: Array(4).fill(null).map(() => ({ t1: "Gagnant H.", s1: "", t2: "Gagnant H.", s2: "", forced1: false, forced2: false })),
+                demis: Array(2).fill(null).map(() => ({ t1: "Gagnant Q.", s1: "", t2: "Gagnant Q.", s2: "", forced1: false, forced2: false })),
                 finale: [{ t1: "Gagnant Demi", s1: "", t2: "Gagnant Demi", s2: "" }]
             };
 
@@ -545,24 +536,43 @@
                     var s2_int = parseInt(match.s2);
                     var classT1 = "";
                     var classT2 = "";
+                    var showRadioClass = "";
 
+                    // Gestion des vainqueurs
                     if (!isNaN(s1_int) && !isNaN(s2_int)) {
                         if (s1_int > s2_int) { classT1 = "winner"; classT2 = "loser"; }
                         else if (s2_int > s1_int) { classT2 = "winner"; classT1 = "loser"; }
+                        else if (s1_int === s2_int && round.id !== 'finale') {
+                            // C'est un match nul hors finale -> On affiche les boutons radios de forçage manuel (But en Or)
+                            showRadioClass = "show-radio";
+                            if (match.forced1) { classT1 = "winner"; classT2 = "loser"; }
+                            if (match.forced2) { classT2 = "winner"; classT1 = "loser"; }
+                        } else if (s1_int === s2_int && round.id === 'finale') {
+                            // C'est la finale, pas de radio car prolongations officielles dans le jeu
+                            classT1 = ""; classT2 = "";
+                        }
                     }
 
-                    // On injecte la classe CSS .editable-bracket et le retrait du 'readonly' si égalité
                     var isEdit1 = (round.id === 'huitiemes' && match.edit1) ? 'class="team-name editable-bracket"' : 'class="team-name" readonly';
                     var isEdit2 = (round.id === 'huitiemes' && match.edit2) ? 'class="team-name editable-bracket"' : 'class="team-name" readonly';
 
+                    var radio1 = (round.id !== 'finale') ? `<input type="radio" class="manual-winner-check" name="force_${round.id}_${mIdx}" ${match.forced1 ? 'checked' : ''} onclick="forcerVainqueur('${round.id}', ${mIdx}, 1)">` : '';
+                    var radio2 = (round.id !== 'finale') ? `<input type="radio" class="manual-winner-check" name="force_${round.id}_${mIdx}" ${match.forced2 ? 'checked' : ''} onclick="forcerVainqueur('${round.id}', ${mIdx}, 2)">` : '';
+
                     divMatch.innerHTML = `
-                        <div class="matchup-team ${classT1}">
+                        <div class="matchup-team ${classT1} ${showRadioClass}">
                             <input type="text" ${isEdit1} value="${match.t1}" onchange="updateBracketName(${mIdx}, 1, this.value)">
-                            <input type="number" class="team-score" value="${match.s1}" min="0" onchange="updateTreeScore('${round.id}', ${mIdx}, 1, this.value)">
+                            <div class="score-zone">
+                                <input type="number" class="team-score" value="${match.s1}" min="0" onchange="updateTreeScore('${round.id}', ${mIdx}, 1, this.value)">
+                                ${radio1}
+                            </div>
                         </div>
-                        <div class="matchup-team ${classT2}">
+                        <div class="matchup-team ${classT2} ${showRadioClass}">
                             <input type="text" ${isEdit2} value="${match.t2}" onchange="updateBracketName(${mIdx}, 2, this.value)">
-                            <input type="number" class="team-score" value="${match.s2}" min="0" onchange="updateTreeScore('${round.id}', ${mIdx}, 2, this.value)">
+                            <div class="score-zone">
+                                <input type="number" class="team-score" value="${match.s2}" min="0" onchange="updateTreeScore('${round.id}', ${mIdx}, 2, this.value)">
+                                ${radio2}
+                            </div>
                         </div>
                     `;
                     divRound.appendChild(divMatch);
@@ -571,15 +581,24 @@
             });
         }
 
-        // Permet au gérant de modifier manuellement le nom d'un qualifié en cas de barrage direct
         function updateBracketName(matchIdx, teamNum, newName) {
             var tree = JSON.parse(localStorage.getItem('pixelArena_treeData'));
-            if(teamNum === 1) {
-                tree.huitiemes[matchIdx].t1 = newName;
+            if(teamNum === 1) tree.huitiemes[matchIdx].t1 = newName;
+            else tree.huitiemes[matchIdx].t2 = newName;
+            localStorage.setItem('pixelArena_treeData', JSON.stringify(tree));
+        }
+
+        function forcerVainqueur(roundId, matchIdx, teamNum) {
+            var tree = JSON.parse(localStorage.getItem('pixelArena_treeData'));
+            if (teamNum === 1) {
+                tree[roundId][matchIdx].forced1 = true;
+                tree[roundId][matchIdx].forced2 = false;
             } else {
-                tree.huitiemes[matchIdx].t2 = newName;
+                tree[roundId][matchIdx].forced1 = false;
+                tree[roundId][matchIdx].forced2 = true;
             }
             localStorage.setItem('pixelArena_treeData', JSON.stringify(tree));
+            propagerVainqueur(roundId, matchIdx, tree);
         }
 
         function updateTreeScore(roundId, matchIdx, teamNum, score) {
@@ -593,25 +612,51 @@
                 if(teamNum === 1) tree[roundId][matchIdx].s1 = isNaN(parsedScore) ? "" : parsedScore;
                 else tree[roundId][matchIdx].s2 = isNaN(parsedScore) ? "" : parsedScore;
             }
-            
+
+            // Réinitialiser le forçage si le score n'est plus un match nul
+            let s1 = tree[roundId][matchIdx].s1;
+            let s2 = tree[roundId][matchIdx].s2;
+            if (s1 !== "" && s2 !== "" && parseInt(s1) !== parseInt(s2)) {
+                tree[roundId][matchIdx].forced1 = false;
+                tree[roundId][matchIdx].forced2 = false;
+            }
+
+            localStorage.setItem('pixelArena_treeData', JSON.stringify(tree));
+            propagerVainqueur(roundId, matchIdx, tree);
+        }
+
+        function propagerVainqueur(roundId, matchIdx, tree) {
             var s1 = tree[roundId][matchIdx].s1;
             var s2 = tree[roundId][matchIdx].s2;
             var vainqueur = "";
 
-            if (s1 !== "" && s2 !== "" && parseInt(s1) !== parseInt(s2)) {
-                vainqueur = parseInt(s1) > parseInt(s2) ? tree[roundId][matchIdx].t1 : tree[roundId][matchIdx].t2;
-                
-                if (roundId === 'huitiemes') {
-                    let nextMatchIdx = Math.floor(matchIdx / 2);
-                    if (matchIdx % 2 === 0) tree.quarts[nextMatchIdx].t1 = vainqueur;
-                    else tree.quarts[nextMatchIdx].t2 = vainqueur;
-                } else if (roundId === 'quarts') {
-                    let nextMatchIdx = Math.floor(matchIdx / 2);
-                    if (matchIdx % 2 === 0) tree.demis[nextMatchIdx].t1 = vainqueur;
-                    else tree.demis[nextMatchIdx].t2 = vainqueur;
-                } else if (roundId === 'demis') {
-                    if (matchIdx === 0) tree.finale[0].t1 = vainqueur;
-                    else tree.finale[0].t2 = vainqueur;
+            if (s1 !== "" && s2 !== "") {
+                let s1_i = parseInt(s1);
+                let s2_i = parseInt(s2);
+
+                if (s1_i > s2_i) {
+                    vainqueur = tree[roundId][matchIdx].t1;
+                } else if (s2_i > s1_i) {
+                    vainqueur = tree[roundId][matchIdx].t2;
+                } else {
+                    // Match nul : On vérifie si un gérant a cliqué sur un bouton radio But en or
+                    if (tree[roundId][matchIdx].forced1) vainqueur = tree[roundId][matchIdx].t1;
+                    else if (tree[roundId][matchIdx].forced2) vainqueur = tree[roundId][matchIdx].t2;
+                }
+
+                if (vainqueur !== "") {
+                    if (roundId === 'huitiemes') {
+                        let nextMatchIdx = Math.floor(matchIdx / 2);
+                        if (matchIdx % 2 === 0) tree.quarts[nextMatchIdx].t1 = vainqueur;
+                        else tree.quarts[nextMatchIdx].t2 = vainqueur;
+                    } else if (roundId === 'quarts') {
+                        let nextMatchIdx = Math.floor(matchIdx / 2);
+                        if (matchIdx % 2 === 0) tree.demis[nextMatchIdx].t1 = vainqueur;
+                        else tree.demis[nextMatchIdx].t2 = vainqueur;
+                    } else if (roundId === 'demis') {
+                        if (matchIdx === 0) tree.finale[0].t1 = vainqueur;
+                        else tree.finale[0].t2 = vainqueur;
+                    }
                 }
             }
 
