@@ -91,9 +91,27 @@
             background-color: #00cc6a;
         }
 
-        .tournament-container {
-            max-width: 800px;
+        .main-layout {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
             margin: 0 auto;
+            flex-wrap: wrap;
+        }
+
+        .tournament-container {
+            flex: 1;
+            min-width: 350px;
+        }
+
+        .ranking-container {
+            flex: 1;
+            min-width: 350px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            height: fit-content;
         }
 
         .match-card {
@@ -109,7 +127,7 @@
 
         .team {
             flex: 1;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 500;
         }
 
@@ -117,18 +135,45 @@
         .team.away { text-align: left; }
 
         .vs {
-            padding: 0 20px;
+            padding: 0 10px;
             color: var(--accent-color);
             font-weight: bold;
             font-style: italic;
         }
 
         .score-input {
-            width: 50px;
+            width: 55px;
             text-align: center;
-            padding: 5px;
+            padding: 8px;
             margin: 0 10px;
             border-radius: 4px;
+            background-color: var(--input-bg);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: bold;
+        }
+
+        td.player-name {
+            text-align: left;
+            font-weight: bold;
+        }
+
+        tr:first-child td.player-name {
+            color: var(--token-color); /* Couleur Or pour le premier */
         }
 
         .hidden {
@@ -140,7 +185,7 @@
 
     <header>
         <h1>Pixel Arena — Tournoi FC 26</h1>
-        <p>Gestionnaire de match dynamique</p>
+        <p>Gestionnaire de match & Classement en direct</p>
     </header>
 
     <div class="setup-section">
@@ -172,12 +217,34 @@
         <button onclick="genererTournoi()">Lancer le Tournoi</button>
     </div>
 
-    <div class="tournament-container">
-        <h2 id="roundTitle" style="margin-bottom: 20px; text-align: center; color: var(--text-muted);"></h2>
-        <div id="matchesList"></div>
+    <div class="main-layout hidden" id="tournamentLayout">
+        <div class="tournament-container">
+            <h2 style="margin-bottom: 20px; color: var(--accent-color);">Planning des Matchs</h2>
+            <div id="matchesList"></div>
+        </div>
+
+        <div class="ranking-container">
+            <h2 style="margin-bottom: 20px; color: var(--token-color); text-align: center;">Classement Général</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 10%">Pos</th>
+                        <th style="text-align: left;">Nom</th>
+                        <th style="width: 15%">Pts</th>
+                        <th style="width: 15%">J</th>
+                        <th style="width: 15%">GA.</th>
+                    </tr>
+                </thead>
+                <tbody id="rankingTableBody">
+                    </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
+        let listeParticipants = [];
+        let listeMatchs = [];
+
         function toggleMode() {
             const mode = document.getElementById('tournamentMode').value;
             if (mode === '1v1') {
@@ -191,59 +258,122 @@
 
         function genererTournoi() {
             const mode = document.getElementById('tournamentMode').value;
-            const matchesList = document.getElementById('matchesList');
-            document.getElementById('roundTitle').innerText = `Planning des Matchs (${mode})`;
-            matchesList.innerHTML = '';
-
-            let participants = [];
+            document.getElementById('tournamentLayout').classList.remove('hidden');
+            
+            listeParticipants = [];
+            listeMatchs = [];
 
             if (mode === '1v1') {
                 const inputs = document.querySelectorAll('.player-in');
-                inputs.forEach(input => participants.push(input.value.trim()));
+                inputs.forEach(input => listeParticipants.push(input.value.trim()));
                 
-                // Algorithme de Berger / Round Robin pour 6 joueurs
-                let rencontres = [];
-                for (let i = 0; i < participants.length; i++) {
-                    for (let j = i + 1; j < participants.length; j++) {
-                        rencontres.push([participants[i], participants[j]]);
+                for (let i = 0; i < listeParticipants.length; i++) {
+                    for (let j = i + 1; j < listeParticipants.length; j++) {
+                        listeMatchs.push({ home: listeParticipants[i], away: listeParticipants[j], scoreHome: null, scoreAway: null });
                     }
                 }
-                
-                // Mélanger un peu les matchs pour le rythme
-                rencontres.sort(() => Math.random() - 0.5);
-                
-                afficherMatchs(rencontres);
+                listeMatchs.sort(() => Math.random() - 0.5);
             } else {
                 const inputs = document.querySelectorAll('.team-in');
-                inputs.forEach(input => participants.push(input.value.trim()));
+                inputs.forEach(input => listeParticipants.push(input.value.trim()));
 
-                // Championnat à 3 équipes avec Matchs Aller/Retour pour plus de fun
                 let rencontres = [
-                    [participants[0], participants[1]], // A vs B
-                    [participants[1], participants[2]], // B vs C
-                    [participants[2], participants[0]], // C vs A
-                    [participants[1], participants[0]], // B vs A (Retour)
-                    [participants[2], participants[1]], // C vs B (Retour)
-                    [participants[0], participants[2]]  // A vs C (Retour)
+                    [listeParticipants[0], listeParticipants[1]],
+                    [listeParticipants[1], listeParticipants[2]],
+                    [listeParticipants[2], listeParticipants[0]],
+                    [listeParticipants[1], listeParticipants[0]],
+                    [listeParticipants[2], listeParticipants[1]],
+                    [listeParticipants[0], listeParticipants[2]]
                 ];
-
-                afficherMatchs(rencontres);
+                rencontres.forEach(r => listeMatchs.push({ home: r[0], away: r[1], scoreHome: null, scoreAway: null }));
             }
+
+            afficherMatchs();
+            calculerClassement();
         }
 
-        function afficherMatchs(matchs) {
+        function afficherMatchs() {
             const matchesList = document.getElementById('matchesList');
-            matchs.forEach((match, index) => {
+            matchesList.innerHTML = '';
+
+            listeMatchs.forEach((match, index) => {
                 const card = document.createElement('div');
                 card.className = 'match-card';
                 card.innerHTML = `
-                    <div class="team home">${match[0]}</div>
-                    <input type="number" class="score-input" placeholder="0" min="0">
+                    <div class="team home">${match.home}</div>
+                    <input type="number" class="score-input" id="scoreH-${index}" min="0" oninput="mettreAJourScore(${index}, 'home', this.value)">
                     <div class="vs">VS</div>
-                    <input type="number" class="score-input" placeholder="0" min="0">
-                    <div class="team away">${match[1]}</div>
+                    <input type="number" class="score-input" id="scoreA-${index}" min="0" oninput="mettreAJourScore(${index}, 'away', this.value)">
+                    <div class="team away">${match.away}</div>
                 `;
                 matchesList.appendChild(card);
+            });
+        }
+
+        function mettreAJourScore(index, side, value) {
+            const scoreVal = value === "" ? null : parseInt(value, 10);
+            if (side === 'home') {
+                listeMatchs[index].scoreHome = scoreVal;
+            } else {
+                listeMatchs[index].scoreAway = scoreVal;
+            }
+            calculerClassement();
+        }
+
+        function calculerClassement() {
+            let stats = {};
+            
+            // Initialisation des stats pour chaque joueur/équipe
+            listeParticipants.forEach(p => {
+                stats[p] = { nom: p, points: 0, joues: 0, butsMarques: 0, butsEncaissees: 0, ga: 0 };
+            });
+
+            // Calcul à partir des matchs saisis
+            listeMatchs.forEach(match => {
+                if (match.scoreHome !== null && match.scoreAway !== null) {
+                    stats[match.home].joues++;
+                    stats[match.away].joues++;
+                    stats[match.home].butsMarques += match.scoreHome;
+                    stats[match.home].butsEncaissees += match.scoreAway;
+                    stats[match.away].butsMarques += match.scoreAway;
+                    stats[match.away].butsEncaissees += match.scoreHome;
+
+                    if (match.scoreHome > match.scoreAway) {
+                        stats[match.home].points += 3;
+                    } else if (match.scoreHome < match.scoreAway) {
+                        stats[match.away].points += 3;
+                    } else {
+                        stats[match.home].points += 1;
+                        stats[match.away].points += 1;
+                    }
+                }
+            });
+
+            // Calcul de la différence de buts (GA)
+            Object.keys(stats).forEach(p => {
+                stats[p].ga = stats[p].butsMarques - stats[p].butsEncaissees;
+            });
+
+            // Tri par points, puis par Goal Average
+            let classement = Object.values(stats).sort((a, b) => {
+                if (b.points !== a.points) return b.points - a.points;
+                return b.ga - a.ga;
+            });
+
+            // Affichage dans le tableau HTML
+            const tbody = document.getElementById('rankingTableBody');
+            tbody.innerHTML = '';
+            
+            classement.forEach((p, idx) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${idx + 1}</strong></td>
+                    <td class="player-name">${p.nom}</td>
+                    <td><strong>${p.points}</strong></td>
+                    <td>${p.joues}</td>
+                    <td>${p.ga > 0 ? '+' + p.ga : p.ga}</td>
+                `;
+                tbody.appendChild(row);
             });
         }
     </script>
