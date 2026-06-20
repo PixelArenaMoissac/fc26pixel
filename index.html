@@ -10,6 +10,8 @@
             --card-bg: #1d1836;
             --accent-color: #00ff87;
             --token-color: #ffd700;
+            --silver-color: #c0c0c0;
+            --bronze-color: #cd7f32;
             --danger-color: #ff4a4a;
             --text-color: #ffffff;
             --text-muted: #a3a0b8;
@@ -172,9 +174,24 @@
             font-weight: bold;
         }
 
-        tr:first-child td.player-name {
-            color: var(--token-color);
+        /* Styles spécifiques pour le podium (1er, 2e, 3e) */
+        .rank-1 { color: var(--token-color); font-size: 1.1em; }
+        .rank-2 { color: var(--silver-color); }
+        .rank-3 { color: var(--bronze-color); }
+
+        .badge {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            border-radius: 50%;
+            font-weight: bold;
+            color: #000;
+            text-align: center;
         }
+        .badge-1 { background-color: var(--token-color); }
+        .badge-2 { background-color: var(--silver-color); }
+        .badge-3 { background-color: var(--bronze-color); }
 
         .hidden {
             display: none;
@@ -193,7 +210,7 @@
             <label for="tournamentMode">Format du tournoi :</label>
             <select id="tournamentMode" onchange="toggleMode()">
                 <option value="1v1">1 vs 1 (7 Joueurs)</option>
-                <option value="2v2">2 vs 2 (3 Équipes + 1 Remplaçant/Trio)</option>
+                <option value="2v2">2 vs 2 (3 Équipes)</option>
             </select>
         </div>
 
@@ -210,9 +227,9 @@
 
         <div id="inputs2v2" class="hidden">
             <label>Noms des équipes (2v2) :</label>
-            <div class="form-group"><input type="text" class="team-in" value="Équipe A (2 joueurs)"></div>
-            <div class="form-group"><input type="text" class="team-in" value="Équipe B (2 joueurs)"></div>
-            <div class="form-group"><input type="text" class="team-in" value="Équipe C (3 joueurs) "></div>
+            <div class="form-group"><input type="text" class="team-in" value="Équipe A"></div>
+            <div class="form-group"><input type="text" class="team-in" value="Équipe B"></div>
+            <div class="form-group"><input type="text" class="team-in" value="Équipe C"></div>
         </div>
 
         <button onclick="genererTournoi()">Lancer le Tournoi</button>
@@ -229,7 +246,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width: 10%">Pos</th>
+                        <th style="width: 15%">Pos</th>
                         <th style="text-align: left;">Nom</th>
                         <th style="width: 15%">Pts</th>
                         <th style="width: 15%">J</th>
@@ -269,13 +286,11 @@
                     if(input.value.trim() !== "") listeParticipants.push(input.value.trim());
                 });
                 
-                // Tout le monde rencontre tout le monde (21 matchs pour 7 joueurs)
                 for (let i = 0; i < listeParticipants.length; i++) {
                     for (let j = i + 1; j < listeParticipants.length; j++) {
                         listeMatchs.push({ home: listeParticipants[i], away: listeParticipants[j], scoreHome: null, scoreAway: null });
                     }
                 }
-                // Mélange aléatoire des matchs
                 listeMatchs.sort(() => Math.random() - 0.5);
             } else {
                 const inputs = document.querySelectorAll('.team-in');
@@ -366,11 +381,26 @@
             tbody.innerHTML = '';
             
             classement.forEach((p, idx) => {
+                let positionContent = `<strong>${idx + 1}</strong>`;
+                let rankClass = '';
+                
+                // On applique le style "podium" pour les 3 premiers
+                if (idx === 0) {
+                    positionContent = `<span class="badge badge-1">1</span>`;
+                    rankClass = 'rank-1';
+                } else if (idx === 1) {
+                    positionContent = `<span class="badge badge-2">2</span>`;
+                    rankClass = 'rank-2';
+                } else if (idx === 2) {
+                    positionContent = `<span class="badge badge-3">3</span>`;
+                    rankClass = 'rank-3';
+                }
+
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td><strong>${idx + 1}</strong></td>
-                    <td class="player-name">${p.nom}</td>
-                    <td><strong>${p.points}</strong></td>
+                    <td>${positionContent}</td>
+                    <td class="player-name ${rankClass}">${p.nom}</td>
+                    <td class="${rankClass}"><strong>${p.points}</strong></td>
                     <td>${p.joues}</td>
                     <td>${p.ga > 0 ? '+' + p.ga : p.ga}</td>
                 `;
