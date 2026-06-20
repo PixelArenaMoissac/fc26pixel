@@ -173,7 +173,7 @@
         }
 
         tr:first-child td.player-name {
-            color: var(--token-color); /* Couleur Or pour le premier */
+            color: var(--token-color);
         }
 
         .hidden {
@@ -185,33 +185,34 @@
 
     <header>
         <h1>Pixel Arena — Tournoi FC 26</h1>
-        <p>Gestionnaire de match & Classement en direct</p>
+        <p>Gestionnaire de match & Classement en direct (7 Joueurs)</p>
     </header>
 
     <div class="setup-section">
         <div class="form-group">
             <label for="tournamentMode">Format du tournoi :</label>
             <select id="tournamentMode" onchange="toggleMode()">
-                <option value="1v1">1 vs 1 (6 Joueurs)</option>
-                <option value="2v2">2 vs 2 (3 Équipes)</option>
+                <option value="1v1">1 vs 1 (7 Joueurs)</option>
+                <option value="2v2">2 vs 2 (3 Équipes + 1 Remplaçant/Trio)</option>
             </select>
         </div>
 
         <div id="inputs1v1">
-            <label>Noms des 6 joueurs :</label>
+            <label>Noms des 7 joueurs :</label>
             <div class="form-group"><input type="text" class="player-in" value="Joueur 1"></div>
             <div class="form-group"><input type="text" class="player-in" value="Joueur 2"></div>
             <div class="form-group"><input type="text" class="player-in" value="Joueur 3"></div>
             <div class="form-group"><input type="text" class="player-in" value="Joueur 4"></div>
             <div class="form-group"><input type="text" class="player-in" value="Joueur 5"></div>
             <div class="form-group"><input type="text" class="player-in" value="Joueur 6"></div>
+            <div class="form-group"><input type="text" class="player-in" value="Joueur 7"></div>
         </div>
 
         <div id="inputs2v2" class="hidden">
-            <label>Noms des 3 équipes (2v2) :</label>
-            <div class="form-group"><input type="text" class="team-in" value="Équipe A"></div>
-            <div class="form-group"><input type="text" class="team-in" value="Équipe B"></div>
-            <div class="form-group"><input type="text" class="team-in" value="Équipe C"></div>
+            <label>Noms des équipes (2v2) :</label>
+            <div class="form-group"><input type="text" class="team-in" value="Équipe A (2 joueurs)"></div>
+            <div class="form-group"><input type="text" class="team-in" value="Équipe B (2 joueurs)"></div>
+            <div class="form-group"><input type="text" class="team-in" value="Équipe C (3 joueurs) "></div>
         </div>
 
         <button onclick="genererTournoi()">Lancer le Tournoi</button>
@@ -235,8 +236,7 @@
                         <th style="width: 15%">GA.</th>
                     </tr>
                 </thead>
-                <tbody id="rankingTableBody">
-                    </tbody>
+                <tbody id="rankingTableBody"></tbody>
             </table>
         </div>
     </div>
@@ -265,17 +265,23 @@
 
             if (mode === '1v1') {
                 const inputs = document.querySelectorAll('.player-in');
-                inputs.forEach(input => listeParticipants.push(input.value.trim()));
+                inputs.forEach(input => {
+                    if(input.value.trim() !== "") listeParticipants.push(input.value.trim());
+                });
                 
+                // Tout le monde rencontre tout le monde (21 matchs pour 7 joueurs)
                 for (let i = 0; i < listeParticipants.length; i++) {
                     for (let j = i + 1; j < listeParticipants.length; j++) {
                         listeMatchs.push({ home: listeParticipants[i], away: listeParticipants[j], scoreHome: null, scoreAway: null });
                     }
                 }
+                // Mélange aléatoire des matchs
                 listeMatchs.sort(() => Math.random() - 0.5);
             } else {
                 const inputs = document.querySelectorAll('.team-in');
-                inputs.forEach(input => listeParticipants.push(input.value.trim()));
+                inputs.forEach(input => {
+                    if(input.value.trim() !== "") listeParticipants.push(input.value.trim());
+                });
 
                 let rencontres = [
                     [listeParticipants[0], listeParticipants[1]],
@@ -323,12 +329,10 @@
         function calculerClassement() {
             let stats = {};
             
-            // Initialisation des stats pour chaque joueur/équipe
             listeParticipants.forEach(p => {
                 stats[p] = { nom: p, points: 0, joues: 0, butsMarques: 0, butsEncaissees: 0, ga: 0 };
             });
 
-            // Calcul à partir des matchs saisis
             listeMatchs.forEach(match => {
                 if (match.scoreHome !== null && match.scoreAway !== null) {
                     stats[match.home].joues++;
@@ -349,18 +353,15 @@
                 }
             });
 
-            // Calcul de la différence de buts (GA)
             Object.keys(stats).forEach(p => {
                 stats[p].ga = stats[p].butsMarques - stats[p].butsEncaissees;
             });
 
-            // Tri par points, puis par Goal Average
             let classement = Object.values(stats).sort((a, b) => {
                 if (b.points !== a.points) return b.points - a.points;
                 return b.ga - a.ga;
             });
 
-            // Affichage dans le tableau HTML
             const tbody = document.getElementById('rankingTableBody');
             tbody.innerHTML = '';
             
