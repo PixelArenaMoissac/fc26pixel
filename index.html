@@ -1,383 +1,8 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PIXEL ARENA - TOURNOI FC26</title>
-    <style>
-        :root {
-            --bg-color: #0f0c1b;
-            --card-bg: #1d1836;
-            --accent-color: #00ff87;
-            --token-color: #ffd700;
-            --silver-color: #c0c0c0;
-            --bronze-color: #cd7f32;
-            --danger-color: #ff4a4a;
-            --text-color: #ffffff;
-            --text-muted: #a3a0b8;
-            --border-color: #2f2954;
-            --input-bg: #2a244d;
-        }
+Voici le code HTML modifié. J'ai configuré la fonction `initialiserArbre()` pour qu'elle injecte directement vos paires de joueurs spécifiques dans les Quarts de Finale au lancement de la phase finale, et j'ai corrigé l'affichage pour forcer l'apparition de la colonne des Quarts quel que soit le nombre de joueurs sélectionné initialement.
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+Remplacez tout votre bloc `<script>` par celui-ci :
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            padding: 20px;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        h1 {
-            color: var(--accent-color);
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .setup-section {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto 30px auto;
-        }
-
-        .selector-group {
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .selector-group select {
-            padding: 10px;
-            background-color: var(--input-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        .players-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .form-group {
-            margin-bottom: 10px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-muted);
-            font-weight: bold;
-        }
-
-        input, button {
-            width: 100%;
-            padding: 12px;
-            background-color: var(--input-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-color);
-            font-size: 16px;
-            outline: none;
-        }
-
-        input:focus {
-            border-color: var(--accent-color);
-        }
-
-        button {
-            background-color: var(--accent-color);
-            color: var(--bg-color);
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            transition: background 0.2s;
-            margin-top: 10px;
-        }
-
-        button:hover {
-            background-color: #00cc6a;
-        }
-
-        .section-title {
-            color: var(--accent-color);
-            text-transform: uppercase;
-            margin: 30px 0 15px 0;
-            text-align: center;
-            letter-spacing: 1px;
-        }
-
-        .groups-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-            gap: 25px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        @media (max-width: 600px) {
-            .groups-container { grid-template-columns: 1fr; }
-        }
-
-        .group-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-        }
-
-        .group-title {
-            color: var(--token-color);
-            font-size: 1.3em;
-            margin-bottom: 15px;
-            border-bottom: 2px solid var(--border-color);
-            padding-bottom: 5px;
-        }
-
-        .journee-title {
-            color: var(--accent-color);
-            font-size: 0.9em;
-            font-weight: bold;
-            margin: 15px 0 8px 0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-left: 3px solid var(--accent-color);
-            padding-left: 8px;
-        }
-
-        .match-wrapper {
-            background-color: var(--bg-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            margin-bottom: 12px;
-            padding: 10px;
-        }
-
-        .match-card {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .team {
-            flex: 1;
-            font-size: 14px;
-            font-weight: 500;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .team.home { text-align: right; }
-        .team.away { text-align: left; }
-
-        .team-sub {
-            font-size: 12px;
-            color: var(--token-color);
-            font-weight: bold;
-            display: block;
-            margin-top: 3px;
-        }
-
-        .vs {
-            padding: 0 5px;
-            color: var(--accent-color);
-            font-weight: bold;
-            font-style: italic;
-            font-size: 12px;
-        }
-
-        .score-input {
-            width: 45px;
-            text-align: center;
-            padding: 5px;
-            margin: 0 8px;
-            border-radius: 4px;
-            background-color: var(--input-bg);
-        }
-
-        .btn-random {
-            background-color: #2a244d;
-            border: 1px solid var(--border-color);
-            color: var(--accent-color);
-            font-size: 11px;
-            padding: 5px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            width: auto;
-            margin: 8px auto 0 auto;
-            display: block;
-            text-transform: none;
-            transition: all 0.2s;
-        }
-        .btn-random:hover { 
-            background-color: var(--accent-color); 
-            color: var(--bg-color);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-            font-size: 14px;
-        }
-
-        th, td {
-            padding: 8px;
-            text-align: center;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        th {
-            color: var(--text-muted);
-            font-weight: bold;
-        }
-
-        td.player-name {
-            text-align: left;
-            font-weight: bold;
-            max-width: 120px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .qualified-zone {
-            background-color: rgba(0, 255, 135, 0.05);
-        }
-
-        .phase-finale-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-        }
-
-        .arbre {
-            display: flex;
-            justify-content: space-between;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .tour {
-            flex: 1;
-            min-width: 270px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-            gap: 15px;
-        }
-
-        .tour-title {
-            text-align: center;
-            color: var(--token-color);
-            margin-bottom: 10px;
-            font-size: 1.1em;
-            text-transform: uppercase;
-        }
-
-        .hidden { display: none; }
-        
-        .badge {
-            display: inline-block;
-            width: 18px;
-            height: 18px;
-            line-height: 18px;
-            border-radius: 50%;
-            font-weight: bold;
-            color: #000;
-            text-align: center;
-            font-size: 11px;
-        }
-        .badge-1 { background-color: var(--accent-color); }
-        .badge-2 { background-color: rgba(0, 255, 135, 0.6); }
-
-        .winner-banner {
-            text-align: center;
-            font-size: 1.8em;
-            color: var(--token-color);
-            margin: 20px 0;
-            padding: 15px;
-            border: 2px dashed var(--token-color);
-            border-radius: 8px;
-            background-color: rgba(255, 215, 0, 0.05);
-            text-transform: uppercase;
-        }
-    </style>
-</head>
-<body>
-
-    <header>
-        <h1>Pixel Arena — Tournoi FC 26</h1>
-        <p>Gestionnaire de Poules & Phase Finale Adaptatif</p>
-    </header>
-
-    <div class="setup-section" id="setupSection">
-        <div class="selector-group">
-            <label for="nbJoueursSelect">Nombre de joueurs :</label>
-            <select id="nbJoueursSelect" onchange="adapterGrilleJoueurs(this.value)">
-                <option value="4">4 Joueurs (1 Poule)</option>
-                <option value="6">6 Joueurs (2 Poules de 3)</option>
-                <option value="8">8 Joueurs (2 Poules de 4)</option>
-                <option value="10">10 Joueurs (2 Poules de 5)</option>
-                <option value="12">12 Joueurs (3 Poules de 4)</option>
-                <option value="14">14 Joueurs (2 Poules de 7)</option>
-                <option value="16" selected>16 Joueurs (4 Poules de 4)</option>
-            </select>
-        </div>
-
-        <label>Noms des joueurs :</label>
-        <div class="players-grid" id="playersGrid">
-            <!-- Rempli en JS dynamique -->
-        </div>
-        <button onclick="genererTournoi()">Lancer le Tournoi</button>
-    </div>
-
-    <div id="tournamentLayout" class="hidden">
-        <h2 class="section-title">🏆 Phase de Poules</h2>
-        <div class="groups-container" id="groupsContainer"></div>
-
-        <h2 class="section-title" id="titlePhaseFinale">🔥 Phase Finale</h2>
-        <div class="phase-finale-container">
-            <div id="winnerBanner" class="winner-banner hidden"></div>
-            <div class="arbre">
-                <div class="tour" id="col-quarts">
-                    <div class="tour-title">Quarts de Finale</div>
-                    <div id="bracket-quarts"></div>
-                </div>
-                <div class="tour" id="col-demis">
-                    <div class="tour-title">Demi-Finales</div>
-                    <div id="bracket-demis"></div>
-                </div>
-                <div class="tour" id="col-finale">
-                    <div class="tour-title">Grand Finale</div>
-                    <div id="bracket-finale"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+```html
     <script>
         let maxJoueurs = 16;
         let listeJoueurs = [];
@@ -442,7 +67,6 @@
                 let n = j.length;
                 for(let k = 0; k < n; k++) {
                     for(let l = k + 1; l < n; l++) {
-                        // Répartition basique en journées virtuelles pour l'affichage
                         let journee = Math.floor((k + l) % 3) + 1; 
                         matchsPoules.push({ groupe: g, journee: journee, home: j[k], away: j[l], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
                     }
@@ -459,31 +83,22 @@
         }
 
         function initialiserArbre() {
-            // Masquage ou affichage des colonnes selon la taille
-            if (maxJoueurs <= 8) {
-                document.getElementById('col-quarts').classList.add('hidden');
-                phaseFinale.quarts = [];
-                phaseFinale.demis = [
-                    { id: 0, home: "1er Groupe A", away: "2e Groupe B", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home', eqHome: "", eqAway: "" },
-                    { id: 1, home: "1er Groupe B", away: "2e Groupe A", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away', eqHome: "", eqAway: "" }
-                ];
-                if(maxJoueurs === 4) {
-                    phaseFinale.demis[0].home = "1er Poule"; phaseFinale.demis[0].away = "4e Poule";
-                    phaseFinale.demis[1].home = "2e Poule"; phaseFinale.demis[1].away = "3e Poule";
-                }
-            } else {
-                document.getElementById('col-quarts').classList.remove('hidden');
-                phaseFinale.quarts = [
-                    { id: 0, home: "Qualifié", away: "Qualifié", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home', eqHome: "", eqAway: "" },
-                    { id: 1, home: "Qualifié", away: "Qualifié", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away', eqHome: "", eqAway: "" },
-                    { id: 2, home: "Qualifié", away: "Qualifié", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'home', eqHome: "", eqAway: "" },
-                    { id: 3, home: "Qualifié", away: "Qualifié", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'away', eqHome: "", eqAway: "" }
-                ];
-                phaseFinale.demis = [
-                    { id: 0, home: "Gagnant Q1", away: "Gagnant Q2", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home', eqHome: "", eqAway: "" },
-                    { id: 1, home: "Gagnant Q3", away: "Gagnant Q4", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away', eqHome: "", eqAway: "" }
-                ];
-            }
+            // Force l'affichage des Quarts de finale
+            document.getElementById('col-quarts').classList.remove('hidden');
+            
+            // Injection directe des affrontements demandés
+            phaseFinale.quarts = [
+                { id: 0, home: "Eddy", away: "Ashraf", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home', eqHome: "", eqAway: "" },
+                { id: 1, home: "Younes", away: "Lorenzo", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away', eqHome: "", eqAway: "" },
+                { id: 2, home: "Kevin", away: "Jules", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'home', eqHome: "", eqAway: "" },
+                { id: 3, home: "Elyes", away: "Vasco", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'away', eqHome: "", eqAway: "" }
+            ];
+            
+            phaseFinale.demis = [
+                { id: 0, home: "Gagnant Q1", away: "Gagnant Q2", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home', eqHome: "", eqAway: "" },
+                { id: 1, home: "Gagnant Q3", away: "Gagnant Q4", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away', eqHome: "", eqAway: "" }
+            ];
+            
             phaseFinale.finale = [{ id: 0, home: "Finaliste 1", away: "Finaliste 2", scoreHome: null, scoreAway: null }];
         }
 
@@ -547,21 +162,16 @@
                 stats[j].diff = stats[j].bp - stats[j].bc;
             });
 
-            let globalRankingFlat = [];
-
             Object.keys(groupes).forEach(g => {
                 let classement = groupes[g].map(j => stats[j]).sort((a, b) => {
                     if (b.points !== a.points) return b.points - a.points;
                     return b.diff - a.diff;
                 });
 
-                globalRankingFlat.push(...classement);
-
                 const tbody = document.getElementById(`tbody-group-${g}`);
                 tbody.innerHTML = '';
                 
-                let limitQualif = maxJoueurs === 16 ? 2 : (maxJoueurs === 12 ? 2 : 2);
-                if (maxJoueurs === 4) limitQualif = 4;
+                let limitQualif = 2;
 
                 classement.forEach((p, idx) => {
                     let isQualifiedClass = idx < limitQualif ? 'class="qualified-zone"' : '';
@@ -581,7 +191,6 @@
                 const matchesDiv = document.getElementById(`matches-group-${g}`);
                 matchesDiv.innerHTML = '';
                 
-                // Regroupement visuel basique
                 const mWrapperGroup = document.createElement('div');
                 mWrapperGroup.className = 'journee-title';
                 mWrapperGroup.innerText = "Matchs de Poule";
@@ -606,7 +215,8 @@
                 });
             });
 
-            injecterQualifiesPhaseFinale(stats);
+            // On court-circuicte l'injection des poules pour garder ton arbre personnalisé intact
+            calculerPhaseFinale();
         }
 
         function majScorePoule(index, side, val) {
@@ -614,35 +224,6 @@
             if(side === 'home') matchsPoules[index].scoreHome = score;
             else matchsPoules[index].scoreAway = score;
             calculerEtAfficherPoulesStats();
-        }
-
-        function injecterQualifiesPhaseFinale(stats) {
-            let trierPoule = (g) => groupes[g].map(j => stats[j]).sort((a,b) => (b.points - a.points) || (b.diff - a.diff));
-            
-            if (maxJoueurs === 16) {
-                let cA = trierPoule('A'), cB = trierPoule('B'), cC = trierPoule('C'), cD = trierPoule('D');
-                phaseFinale.quarts[0].home = cA[0].nom; phaseFinale.quarts[0].away = cB[1].nom;
-                phaseFinale.quarts[1].home = cC[0].nom; phaseFinale.quarts[1].away = cD[1].nom;
-                phaseFinale.quarts[2].home = cB[0].nom; phaseFinale.quarts[2].away = cA[1].nom;
-                phaseFinale.quarts[3].home = cD[0].nom; phaseFinale.quarts[3].away = cC[1].nom;
-            } else if (maxJoueurs === 12) {
-                let cA = trierPoule('A'), cB = trierPoule('B'), cC = trierPoule('C');
-                let lesDeuxiemes = [cA[1], cB[1], cC[1]].sort((a,b) => (b.points - a.points) || (b.diff - a.diff));
-                phaseFinale.quarts[0].home = cA[0].nom; phaseFinale.quarts[0].away = lesDeuxiemes[2].nom; 
-                phaseFinale.quarts[1].home = cB[0].nom; phaseFinale.quarts[1].away = lesDeuxiemes[1].nom;
-                phaseFinale.quarts[2].home = cC[0].nom; phaseFinale.quarts[2].away = lesDeuxiemes[0].nom;
-                phaseFinale.quarts[3].home = cA[1].nom; phaseFinale.quarts[3].away = cB[1].nom;
-            } else if (maxJoueurs === 8 || maxJoueurs === 6 || maxJoueurs === 14) {
-                let cA = trierPoule('A'), cB = trierPoule('B');
-                phaseFinale.demis[0].home = cA[0].nom; phaseFinale.demis[0].away = cB[1].nom;
-                phaseFinale.demis[1].home = cB[0].nom; phaseFinale.demis[1].away = cA[1].nom;
-            } else if (maxJoueurs === 4) {
-                let cA = trierPoule('A');
-                phaseFinale.demis[0].home = cA[0].nom; phaseFinale.demis[0].away = cA[3].nom;
-                phaseFinale.demis[1].home = cA[1].nom; phaseFinale.demis[1].away = cA[2].nom;
-            }
-
-            calculerPhaseFinale();
         }
 
         function calculerPhaseFinale() {
@@ -738,5 +319,5 @@
             }
         }
     </script>
-</body>
-</html>
+
+```
