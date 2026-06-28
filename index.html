@@ -108,7 +108,6 @@
             letter-spacing: 1px;
         }
 
-        /* Groupes d'affichage en Poules */
         .groups-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
@@ -134,6 +133,17 @@
             margin-bottom: 15px;
             border-bottom: 2px solid var(--border-color);
             padding-bottom: 5px;
+        }
+
+        .journee-title {
+            color: var(--accent-color);
+            font-size: 0.9em;
+            font-weight: bold;
+            margin: 15px 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-left: 3px solid var(--accent-color);
+            padding-left: 8px;
         }
 
         .match-card {
@@ -176,7 +186,6 @@
             background-color: var(--input-bg);
         }
 
-        /* Supprimer les flèches des inputs de type number */
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
             -webkit-appearance: none;
@@ -214,7 +223,6 @@
             background-color: rgba(0, 255, 135, 0.05);
         }
 
-        /* Arbre de Phase Finale */
         .phase-finale-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -276,7 +284,6 @@
             border-radius: 8px;
             background-color: rgba(255, 215, 0, 0.05);
             text-transform: uppercase;
-            animation: pulse 2s infinite;
         }
     </style>
 </head>
@@ -287,7 +294,6 @@
         <p>Gestionnaire de Poules & Phase Finale (16 Joueurs)</p>
     </header>
 
-    <!-- ÉCRAN CONFIGURATION -->
     <div class="setup-section" id="setupSection">
         <label>Noms des 16 joueurs :</label>
         <div class="players-grid">
@@ -311,29 +317,22 @@
         <button onclick="genererTournoi()">Lancer le Tournoi</button>
     </div>
 
-    <!-- ZONE DE COMPÉTITION -->
     <div id="tournamentLayout" class="hidden">
-        
-        <!-- PHASE DE POULES -->
         <h2 class="section-title">🏆 Phase de Poules</h2>
         <div class="groups-container" id="groupsContainer"></div>
 
-        <!-- PHASE FINALE -->
         <h2 class="section-title">🔥 Phase Finale (Élimination Directe)</h2>
         <div class="phase-finale-container">
             <div id="winnerBanner" class="winner-banner hidden"></div>
             <div class="arbre">
-                <!-- Quarts de finale -->
                 <div class="tour">
                     <div class="tour-title">Quarts de Finale</div>
                     <div id="bracket-quarts"></div>
                 </div>
-                <!-- Demis de finale -->
                 <div class="tour">
                     <div class="tour-title">Demi-Finales</div>
                     <div id="bracket-demis"></div>
                 </div>
-                <!-- Finale -->
                 <div class="tour">
                     <div class="tour-title">Grand Finale</div>
                     <div id="bracket-finale"></div>
@@ -347,7 +346,6 @@
         let groupes = { A: [], B: [], C: [], D: [] };
         let matchsPoules = [];
         
-        // Structure simplifiée pour stocker et lier la phase finale
         let phaseFinale = {
             quarts: [
                 { id: 0, home: "1er Groupe A", away: "2e Groupe B", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home' },
@@ -371,15 +369,12 @@
                 if(input.value.trim() !== "") listeJoueurs.push(input.value.trim());
             });
 
-            // Sécurité si moins de 16 joueurs remplis
             while(listeJoueurs.length < 16) {
                 listeJoueurs.push("Joueur " + (listeJoueurs.length + 1));
             }
 
-            // Mélange aléatoire des joueurs (Tirage au sort)
             listeJoueurs.sort(() => Math.random() - 0.5);
 
-            // Répartition dans les 4 groupes
             const nomsGroupes = ['A', 'B', 'C', 'D'];
             groupes = { A: [], B: [], C: [], D: [] };
             matchsPoules = [];
@@ -389,13 +384,18 @@
                 groupes[grp].push(listeJoueurs[i]);
             }
 
-            // Génération des matchs de poules (Toutes les combinaisons par groupe)
+            // Génération par Journées (Chaque joueur rencontre les 3 autres sans doublons)
             nomsGroupes.forEach(g => {
                 let j = groupes[g];
-                let combis = [[0,1], [2,3], [0,2], [1,3], [0,3], [1,2]];
-                combis.forEach(c => {
-                    matchsPoules.push({ groupe: g, home: j[c[0]], away: j[c[1]], scoreHome: null, scoreAway: null });
-                });
+                // Journée 1 : 1 vs 2 et 3 vs 4
+                matchsPoules.push({ groupe: g, journee: 1, home: j[0], away: j[1], scoreHome: null, scoreAway: null });
+                matchsPoules.push({ groupe: g, journee: 1, home: j[2], away: j[3], scoreHome: null, scoreAway: null });
+                // Journée 2 : 1 vs 3 et 2 vs 4
+                matchsPoules.push({ groupe: g, journee: 2, home: j[0], away: j[2], scoreHome: null, scoreAway: null });
+                matchsPoules.push({ groupe: g, journee: 2, home: j[1], away: j[3], scoreHome: null, scoreAway: null });
+                // Journée 3 : 1 vs 4 et 2 vs 3
+                matchsPoules.push({ groupe: g, journee: 3, home: j[0], away: j[3], scoreHome: null, scoreAway: null });
+                matchsPoules.push({ groupe: g, journee: 3, home: j[1], away: j[2], scoreHome: null, scoreAway: null });
             });
 
             document.getElementById('setupSection').classList.add('hidden');
@@ -414,8 +414,6 @@
                 groupCard.className = 'group-card';
                 
                 let html = `<div class="group-title">Groupe ${g}</div>`;
-                
-                // Tableau de classement du groupe
                 html += `
                     <table>
                         <thead>
@@ -445,7 +443,6 @@
                 stats[j] = { nom: j, points: 0, joues: 0, bp: 0, bc: 0, diff: 0 };
             });
 
-            // Calcul des scores
             matchsPoules.forEach(m => {
                 if (m.scoreHome !== null && m.scoreAway !== null) {
                     stats[m.home].joues++;
@@ -468,16 +465,14 @@
                 stats[j].diff = stats[j].bp - stats[j].bc;
             });
 
-            // Tri et affichage pour chaque groupe
-            let qualifies = {}; // Stockera les 1er et 2e de chaque groupe
+            let qualifies = {};
 
             ['A', 'B', 'C', 'D'].forEach(g => {
                 let classement = groupes[g].map(j => stats[j]).sort((a, b) => {
                     if (b.points !== a.points) return b.points - a.points;
-                    return b.diff - a.diff; // Différence de buts globale
+                    return b.diff - a.diff;
                 });
 
-                // Enregistrer les qualifiés pour la phase finale
                 qualifies[g] = [classement[0].nom, classement[1].nom];
 
                 const tbody = document.getElementById(`tbody-group-${g}`);
@@ -497,25 +492,30 @@
                     `;
                 });
 
-                // Affichage des Matchs sous le tableau de classement
                 const matchesDiv = document.getElementById(`matches-group-${g}`);
                 matchesDiv.innerHTML = '';
                 
-                matchsPoules.filter(m => m.groupe === g).forEach((match) => {
-                    // Trouver l'index global pour l'ID unique
-                    let globalIndex = matchsPoules.indexOf(match);
-                    
-                    const mCard = document.createElement('div');
-                    mCard.className = 'match-card';
-                    mCard.innerHTML = `
-                        <div class="team home">${match.home}</div>
-                        <input type="number" class="score-input" value="${match.scoreHome !== null ? match.scoreHome : ''}" oninput="majScorePoule(${globalIndex}, 'home', this.value)">
-                        <div class="vs">VS</div>
-                        <input type="number" class="score-input" value="${match.scoreAway !== null ? match.scoreAway : ''}" oninput="majScorePoule(${globalIndex}, 'away', this.value)">
-                        <div class="team away">${match.away}</div>
-                    `;
-                    matchesDiv.appendChild(mCard);
-                });
+                // Affichage propre découpé par Journées de 1 à 3
+                for(let j_num = 1; j_num <= 3; j_num++) {
+                    const jTitle = document.createElement('div');
+                    jTitle.className = 'journee-title';
+                    jTitle.innerText = `Journée ${j_num}`;
+                    matchesDiv.appendChild(jTitle);
+
+                    matchsPoules.filter(m => m.groupe === g && m.journee === j_num).forEach((match) => {
+                        let globalIndex = matchsPoules.indexOf(match);
+                        const mCard = document.createElement('div');
+                        mCard.className = 'match-card';
+                        mCard.innerHTML = `
+                            <div class="team home">${match.home}</div>
+                            <input type="number" class="score-input" value="${match.scoreHome !== null ? match.scoreHome : ''}" oninput="majScorePoule(${globalIndex}, 'home', this.value)">
+                            <div class="vs">VS</div>
+                            <input type="number" class="score-input" value="${match.scoreAway !== null ? match.scoreAway : ''}" oninput="majScorePoule(${globalIndex}, 'away', this.value)">
+                            <div class="team away">${match.away}</div>
+                        `;
+                        matchesDiv.appendChild(mCard);
+                    });
+                }
             });
 
             injecterQualifiesPhaseFinale(qualifies);
@@ -529,7 +529,6 @@
         }
 
         function injecterQualifiesPhaseFinale(qualifies) {
-            // Remplissage dynamique des affiches des Quarts selon l'avancée des poules
             phaseFinale.quarts[0].home = qualifies.A[0];
             phaseFinale.quarts[0].away = qualifies.B[1];
             phaseFinale.quarts[1].home = qualifies.C[0];
@@ -539,23 +538,20 @@
             phaseFinale.quarts[3].home = qualifies.D[0];
             phaseFinale.quarts[3].away = qualifies.C[1];
 
-            // Recalculer l'arbre pour mettre à jour les noms mis en poule
             calculerPhaseFinale();
         }
 
         function calculerPhaseFinale() {
-            // 1. Des Quarts vers les Demis
             phaseFinale.quarts.forEach(q => {
                 if(q.scoreHome !== null && q.scoreAway !== null) {
                     let vainqueur = q.scoreHome > q.scoreAway ? q.home : q.away;
-                    if (q.scoreHome === q.scoreAway) vainqueur = q.home + " (Tab)"; // Gestion des égalités rapides
+                    if (q.scoreHome === q.scoreAway) vainqueur = q.home + " (Tab)";
                     
                     if(q.nextSide === 'home') phaseFinale.demis[q.nextMatch].home = vainqueur;
                     else phaseFinale.demis[q.nextMatch].away = vainqueur;
                 }
             });
 
-            // 2. Des Demis vers la Finale
             phaseFinale.demis.forEach(d => {
                 if(d.scoreHome !== null && d.scoreAway !== null) {
                     let vainqueur = d.scoreHome > d.scoreAway ? d.home : d.away;
@@ -566,7 +562,6 @@
                 }
             });
 
-            // Winner Check
             const f = phaseFinale.finale[0];
             const banner = document.getElementById('winnerBanner');
             if(f.scoreHome !== null && f.scoreAway !== null) {
