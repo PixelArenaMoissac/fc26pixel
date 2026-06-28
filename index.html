@@ -146,12 +146,15 @@
             padding-left: 8px;
         }
 
-        .match-card {
+        .match-wrapper {
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            padding: 10px 15px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            padding: 10px;
+        }
+
+        .match-card {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -168,6 +171,14 @@
 
         .team.home { text-align: right; }
         .team.away { text-align: left; }
+
+        .team-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-style: italic;
+            display: block;
+            margin-top: 2px;
+        }
 
         .vs {
             padding: 0 5px;
@@ -186,11 +197,20 @@
             background-color: var(--input-bg);
         }
 
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
+        .btn-wheel {
+            background-color: #2a244d;
+            border: 1px solid var(--border-color);
+            color: var(--token-color);
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: auto;
+            margin: 8px auto 0 auto;
+            display: block;
+            text-transform: none;
         }
+        .btn-wheel:hover { background-color: #3b336a; }
 
         table {
             width: 100%;
@@ -241,7 +261,7 @@
 
         .tour {
             flex: 1;
-            min-width: 250px;
+            min-width: 270px;
             display: flex;
             flex-direction: column;
             justify-content: space-around;
@@ -256,9 +276,7 @@
             text-transform: uppercase;
         }
 
-        .hidden {
-            display: none;
-        }
+        .hidden { display: none; }
         
         .badge {
             display: inline-block;
@@ -285,13 +303,71 @@
             background-color: rgba(255, 215, 0, 0.05);
             text-transform: uppercase;
         }
+
+        /* Styles de la Modale de la Roue */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.85);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            max-width: 450px; width: 90%;
+            position: relative;
+        }
+        .wheel-container {
+            position: relative;
+            width: 250px; height: 250px;
+            margin: 20px auto;
+        }
+        .wheel {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            border: 5px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            transition: transform 3s cubic-bezier(0.1, 0.8, 0.3, 1);
+            background: conic-gradient(
+                #ff4a4a 0deg 36deg, #00ff87 36deg 72deg, #ffd700 72deg 108deg, 
+                #2f2954 108deg 144deg, #ff8700 144deg 180deg, #00e5ff 180deg 216deg,
+                #e500ff 216deg 252deg, #cd7f32 252deg 288deg, #99ff00 288deg 324deg,
+                #ffffff 324deg 360deg
+            );
+        }
+        .wheel-pointer {
+            position: absolute;
+            top: -10px; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 25px solid var(--token-color);
+            z-index: 10;
+        }
+        .wheel-center {
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 40px; height: 40px;
+            background-color: var(--bg-color);
+            border-radius: 50%; border: 3px solid var(--accent-color);
+            z-index: 5;
+        }
+        .wheel-status {
+            font-size: 1.2em; color: var(--accent-color);
+            margin-top: 15px; font-weight: bold; min-height: 1.5em;
+        }
     </style>
 </head>
 <body>
 
     <header>
         <h1>Pixel Arena — Tournoi FC 26</h1>
-        <p>Gestionnaire de Poules & Phase Finale (16 Joueurs)</p>
+        <p>Gestionnaire de Poules & Phase Finale avec Roue des Équipes (16 Joueurs)</p>
     </header>
 
     <div class="setup-section" id="setupSection">
@@ -341,26 +417,49 @@
         </div>
     </div>
 
+    <!-- MODALE INTERACTIVE DE LA ROUE -->
+    <div id="wheelModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="wheelModalTitle" style="color: var(--text-color);">Tirage au sort</h3>
+            <div class="wheel-container">
+                <div class="wheel-pointer"></div>
+                <div class="wheel-center"></div>
+                <div id="theWheel" class="wheel"></div>
+            </div>
+            <div id="wheelStatus" class="wheel-status">En attente...</div>
+            <button id="btnSpinWheel" style="margin-top: 15px;">Lancer la roue !</button>
+        </div>
+    </div>
+
     <script>
         let listeJoueurs = [];
         let groupes = { A: [], B: [], C: [], D: [] };
         let matchsPoules = [];
         
+        // Liste d'équipes corrigée
+        const listeEquipes = [
+            "Argentine", "Espagne", "Portugal", "Brésil", "Allemagne", 
+            "Côte d'Ivoire", "Maroc", "Angleterre", "Pays-Bas", "Belgique"
+        ];
+
         let phaseFinale = {
             quarts: [
-                { id: 0, home: "1er Groupe A", away: "2e Groupe B", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home' },
-                { id: 1, home: "1er Groupe C", away: "2e Groupe D", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away' },
-                { id: 2, home: "1er Groupe B", away: "2e Groupe A", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'home' },
-                { id: 3, home: "1er Groupe D", away: "2e Groupe C", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'away' }
+                { id: 0, home: "1er Groupe A", away: "2e Groupe B", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home', eqHome: "", eqAway: "" },
+                { id: 1, home: "1er Groupe C", away: "2e Groupe D", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away', eqHome: "", eqAway: "" },
+                { id: 2, home: "1er Groupe B", away: "2e Groupe A", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'home', eqHome: "", eqAway: "" },
+                { id: 3, home: "1er Groupe D", away: "2e Groupe C", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'away', eqHome: "", eqAway: "" }
             ],
             demis: [
-                { id: 0, home: "Gagnant Q1", away: "Gagnant Q2", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home' },
-                { id: 1, home: "Gagnant Q3", away: "Gagnant Q4", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away' }
+                { id: 0, home: "Gagnant Q1", away: "Gagnant Q2", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home', eqHome: "", eqAway: "" },
+                { id: 1, home: "Gagnant Q3", away: "Gagnant Q4", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away', eqHome: "", eqAway: "" }
             ],
             finale: [
                 { id: 0, home: "Gagnant Demi 1", away: "Gagnant Demi 2", scoreHome: null, scoreAway: null }
             ]
         };
+
+        // Données du tirage en cours
+        let tirageEnCours = { etape: '', index: '', side: 'home' };
 
         function genererTournoi() {
             listeJoueurs = [];
@@ -384,18 +483,14 @@
                 groupes[grp].push(listeJoueurs[i]);
             }
 
-            // Génération par Journées (Chaque joueur rencontre les 3 autres sans doublons)
             nomsGroupes.forEach(g => {
                 let j = groupes[g];
-                // Journée 1 : 1 vs 2 et 3 vs 4
-                matchsPoules.push({ groupe: g, journee: 1, home: j[0], away: j[1], scoreHome: null, scoreAway: null });
-                matchsPoules.push({ groupe: g, journee: 1, home: j[2], away: j[3], scoreHome: null, scoreAway: null });
-                // Journée 2 : 1 vs 3 et 2 vs 4
-                matchsPoules.push({ groupe: g, journee: 2, home: j[0], away: j[2], scoreHome: null, scoreAway: null });
-                matchsPoules.push({ groupe: g, journee: 2, home: j[1], away: j[3], scoreHome: null, scoreAway: null });
-                // Journée 3 : 1 vs 4 et 2 vs 3
-                matchsPoules.push({ groupe: g, journee: 3, home: j[0], away: j[3], scoreHome: null, scoreAway: null });
-                matchsPoules.push({ groupe: g, journee: 3, home: j[1], away: j[2], scoreHome: null, scoreAway: null });
+                matchsPoules.push({ groupe: g, journee: 1, home: j[0], away: j[1], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
+                matchsPoules.push({ groupe: g, journee: 1, home: j[2], away: j[3], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
+                matchsPoules.push({ groupe: g, journee: 2, home: j[0], away: j[2], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
+                matchsPoules.push({ groupe: g, journee: 2, home: j[1], away: j[3], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
+                matchsPoules.push({ groupe: g, journee: 3, home: j[0], away: j[3], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
+                matchsPoules.push({ groupe: g, journee: 3, home: j[1], away: j[2], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
             });
 
             document.getElementById('setupSection').classList.add('hidden');
@@ -495,7 +590,6 @@
                 const matchesDiv = document.getElementById(`matches-group-${g}`);
                 matchesDiv.innerHTML = '';
                 
-                // Affichage propre découpé par Journées de 1 à 3
                 for(let j_num = 1; j_num <= 3; j_num++) {
                     const jTitle = document.createElement('div');
                     jTitle.className = 'journee-title';
@@ -504,16 +598,20 @@
 
                     matchsPoules.filter(m => m.groupe === g && m.journee === j_num).forEach((match) => {
                         let globalIndex = matchsPoules.indexOf(match);
-                        const mCard = document.createElement('div');
-                        mCard.className = 'match-card';
-                        mCard.innerHTML = `
-                            <div class="team home">${match.home}</div>
-                            <input type="number" class="score-input" value="${match.scoreHome !== null ? match.scoreHome : ''}" oninput="majScorePoule(${globalIndex}, 'home', this.value)">
-                            <div class="vs">VS</div>
-                            <input type="number" class="score-input" value="${match.scoreAway !== null ? match.scoreAway : ''}" oninput="majScorePoule(${globalIndex}, 'away', this.value)">
-                            <div class="team away">${match.away}</div>
+                        const mWrapper = document.createElement('div');
+                        mWrapper.className = 'match-wrapper';
+                        
+                        mWrapper.innerHTML = `
+                            <div class="match-card">
+                                <div class="team home">${match.home} <span class="team-sub">${match.eqHome || 'Pas d\'équipe'}</span></div>
+                                <input type="number" class="score-input" value="${match.scoreHome !== null ? match.scoreHome : ''}" oninput="majScorePoule(${globalIndex}, 'home', this.value)">
+                                <div class="vs">VS</div>
+                                <input type="number" class="score-input" value="${match.scoreAway !== null ? match.scoreAway : ''}" oninput="majScorePoule(${globalIndex}, 'away', this.value)">
+                                <div class="team away">${match.away} <span class="team-sub">${match.eqAway || 'Pas d\'équipe'}</span></div>
+                            </div>
+                            <button class="btn-wheel" onclick="ouvrirRoue('poules', ${globalIndex})">🎲 Tirer les équipes</button>
                         `;
-                        matchesDiv.appendChild(mCard);
+                        matchesDiv.appendChild(mWrapper);
                     });
                 }
             });
@@ -585,27 +683,120 @@
         }
 
         function afficherArbre() {
-            renderEtape('quarts', 'bracket-quarts');
-            renderEtape('demis', 'bracket-demis');
-            renderEtape('finale', 'bracket-finale');
+            renderEtape('quarts', 'bracket-quarts', true);
+            renderEtape('demis', 'bracket-demis', true);
+            renderEtape('finale', 'bracket-finale', false); // Pas de roue pour la finale
         }
 
-        function renderEtape(etape, elementId) {
+        function renderEtape(etape, elementId, avecRoue) {
             const block = document.getElementById(elementId);
             block.innerHTML = '';
 
             phaseFinale[etape].forEach((match, index) => {
-                const div = document.createElement('div');
-                div.className = 'match-card';
-                div.innerHTML = `
-                    <div class="team home">${match.home}</div>
-                    <input type="number" class="score-input" value="${match.scoreHome !== null ? match.scoreHome : ''}" oninput="majScoreArbre('${etape}', ${index}, 'home', this.value)">
-                    <div class="vs">VS</div>
-                    <input type="number" class="score-input" value="${match.scoreAway !== null ? match.scoreAway : ''}" oninput="majScoreArbre('${etape}', ${index}, 'away', this.value)">
-                    <div class="team away">${match.away}</div>
+                const mWrapper = document.createElement('div');
+                mWrapper.className = 'match-wrapper';
+                
+                let eqHDisp = avecRoue ? `<span class="team-sub">${match.eqHome || 'Pas d\'équipe'}</span>` : '';
+                let eqADisp = avecRoue ? `<span class="team-sub">${match.eqAway || 'Pas d\'équipe'}</span>` : '';
+                let buttonWheelDisp = avecRoue ? `<button class="btn-wheel" onclick="ouvrirRoue('${etape}', ${index})">🎲 Tirer les équipes</button>` : '';
+
+                mWrapper.innerHTML = `
+                    <div class="match-card">
+                        <div class="team home">${match.home} ${eqHDisp}</div>
+                        <input type="number" class="score-input" value="${match.scoreHome !== null ? match.scoreHome : ''}" oninput="majScoreArbre('${etape}', ${index}, 'home', this.value)">
+                        <div class="vs">VS</div>
+                        <input type="number" class="score-input" value="${match.scoreAway !== null ? match.scoreAway : ''}" oninput="majScoreArbre('${etape}', ${index}, 'away', this.value)">
+                        <div class="team away">${match.away} ${eqADisp}</div>
+                    </div>
+                    ${buttonWheelDisp}
                 `;
-                block.appendChild(div);
+                block.appendChild(mWrapper);
             });
+        }
+
+        // --- SYSTÈME DE ROUE DES ÉQUIPES ---
+        function ouvrirRoue(etape, index) {
+            let match = etape === 'poules' ? matchsPoules[index] : phaseFinale[etape][index];
+            
+            tirageEnCours = { etape: etape, index: index, side: 'home', eqHomeTemp: '' };
+            
+            document.getElementById('wheelModalTitle').innerText = `Tirage Équipe de : ${match.home}`;
+            document.getElementById('wheelStatus').innerText = "Prêt à tourner !";
+            document.getElementById('theWheel').style.transform = 'rotate(0deg)';
+            
+            const btn = document.getElementById('btnSpinWheel');
+            btn.onclick = lancerRotationRoue;
+            btn.disabled = false;
+            btn.innerText = "Lancer la roue !";
+
+            document.getElementById('wheelModal').classList.remove('hidden');
+        }
+
+        function lancerRotationRoue() {
+            const btn = document.getElementById('btnSpinWheel');
+            btn.disabled = true;
+            document.getElementById('wheelStatus').innerText = "Sélection en cours...";
+
+            // Rotation aléatoire (plusieurs tours complets + angle au hasard)
+            const randomDegrees = Math.floor(Math.random() * 360) + 1440; 
+            const wheel = document.getElementById('theWheel');
+            wheel.style.transform = `rotate(${randomDegrees}deg)`;
+
+            setTimeout(() => {
+                // Détermination de l'élément indexé basé sur le reste de la division par 360deg
+                let finalAngle = randomDegrees % 360;
+                // Inversion de l'angle pour correspondre au pointeur haut (0deg haut)
+                let indexEquipe = Math.floor(((360 - finalAngle) % 360) / 36) % 10;
+                let equipeGagnee = listeEquipes[indexEquipe];
+
+                let matchIndex = tirageEnCours.index;
+                let etape = tirageEnCours.etape;
+
+                if (tirageEnCours.side === 'home') {
+                    // Enregistrement équipe domicile
+                    tirageEnCours.eqHomeTemp = equipeGagnee;
+                    tirageEnCours.side = 'away';
+                    
+                    let match = etape === 'poules' ? matchsPoules[matchIndex] : phaseFinale[etape][matchIndex];
+                    
+                    document.getElementById('wheelStatus').innerText = `Joueur 1 obtient : ${equipeGagnee} !`;
+                    
+                    // Préparation immédiate de la roue pour l'adversaire
+                    setTimeout(() => {
+                        document.getElementById('wheelModalTitle').innerText = `Tirage Équipe de : ${match.away}`;
+                        document.getElementById('wheelStatus').innerText = `Au tour du joueur Extérieur...`;
+                        wheel.style.transition = 'none';
+                        wheel.style.transform = 'rotate(0deg)';
+                        setTimeout(() => {
+                            wheel.style.transition = 'transform 3s cubic-bezier(0.1, 0.8, 0.3, 1)';
+                            btn.disabled = false;
+                            btn.innerText = "Lancer pour l'adversaire !";
+                        }, 50);
+                    }, 1500);
+
+                } else {
+                    // Enregistrement équipe extérieur et fermeture
+                    let eqHomeFinal = tirageEnCours.eqHomeTemp;
+                    let eqAwayFinal = equipeGagnee;
+
+                    if (etape === 'poules') {
+                        matchsPoules[matchIndex].eqHome = eqHomeFinal;
+                        matchsPoules[matchIndex].eqAway = eqAwayFinal;
+                        afficherPoules();
+                    } else {
+                        phaseFinale[etape][matchIndex].eqHome = eqHomeFinal;
+                        phaseFinale[etape][matchIndex].eqAway = eqAwayFinal;
+                        afficherArbre();
+                    }
+
+                    document.getElementById('wheelStatus').innerText = `Joueur 2 obtient : ${equipeGagnee} !`;
+                    
+                    setTimeout(() => {
+                        document.getElementById('wheelModal').classList.add('hidden');
+                    }, 1800);
+                }
+
+            }, 3050); // Attend la fin de la transition CSS (3s)
         }
     </script>
 </body>
