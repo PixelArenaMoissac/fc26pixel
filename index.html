@@ -368,8 +368,9 @@
         let groupes = { A: [], B: [], C: [], D: [] };
         let matchsPoules = [];
         
+        // Ajout de la France à la liste des sélections
         const listeEquipes = [
-            "Argentine", "Espagne", "Portugal", "Brésil", "Allemagne", 
+            "France", "Argentine", "Espagne", "Portugal", "Brésil", "Allemagne", 
             "Côte d'Ivoire", "Maroc", "Angleterre", "Pays-Bas", "Belgique"
         ];
 
@@ -644,11 +645,9 @@
 
         // --- SÉLECTION INSTANTANÉE DES ÉQUIPES ---
         function selectionnerEquipesAleatoires(etape, index) {
-            // Sélection de 2 index différents dans le tableau d'équipes
             let index1 = Math.floor(Math.random() * listeEquipes.length);
             let index2 = Math.floor(Math.random() * listeEquipes.length);
             
-            // Éviter d'avoir deux fois la même équipe dans le même match
             while(index1 === index2) {
                 index2 = Math.floor(Math.random() * listeEquipes.length);
             }
