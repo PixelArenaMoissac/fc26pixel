@@ -53,6 +53,23 @@
             margin: 0 auto 30px auto;
         }
 
+        .selector-group {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .selector-group select {
+            padding: 10px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
         .players-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -110,7 +127,7 @@
 
         .groups-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
             gap: 25px;
             max-width: 1400px;
             margin: 0 auto;
@@ -313,28 +330,26 @@
 
     <header>
         <h1>Pixel Arena — Tournoi FC 26</h1>
-        <p>Gestionnaire de Poules & Phase Finale (16 Joueurs)</p>
+        <p>Gestionnaire de Poules & Phase Finale Adaptatif</p>
     </header>
 
     <div class="setup-section" id="setupSection">
-        <label>Noms des 16 joueurs :</label>
-        <div class="players-grid">
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 1"></div>
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 2"></div>
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 3"></div>
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 4"></div>
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 5"></div>
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 6"></div>
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 7"></div>
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 8"></div>
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 9"></div>
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 10"></div>
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 11"></div>
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 12"></div>
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 13"></div>
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 14"></div>
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 15"></div>
-            <div class="form-group"><input type="text" class="player-in" value="Joueur 16"></div>
+        <div class="selector-group">
+            <label for="nbJoueursSelect">Nombre de joueurs :</label>
+            <select id="nbJoueursSelect" onchange="adapterGrilleJoueurs(this.value)">
+                <option value="4">4 Joueurs (1 Poule)</option>
+                <option value="6">6 Joueurs (2 Poules de 3)</option>
+                <option value="8">8 Joueurs (2 Poules de 4)</option>
+                <option value="10">10 Joueurs (2 Poules de 5)</option>
+                <option value="12">12 Joueurs (3 Poules de 4)</option>
+                <option value="14">14 Joueurs (2 Poules de 7)</option>
+                <option value="16" selected>16 Joueurs (4 Poules de 4)</option>
+            </select>
+        </div>
+
+        <label>Noms des joueurs :</label>
+        <div class="players-grid" id="playersGrid">
+            <!-- Rempli en JS dynamique -->
         </div>
         <button onclick="genererTournoi()">Lancer le Tournoi</button>
     </div>
@@ -343,19 +358,19 @@
         <h2 class="section-title">🏆 Phase de Poules</h2>
         <div class="groups-container" id="groupsContainer"></div>
 
-        <h2 class="section-title">🔥 Phase Finale (Élimination Directe)</h2>
+        <h2 class="section-title" id="titlePhaseFinale">🔥 Phase Finale</h2>
         <div class="phase-finale-container">
             <div id="winnerBanner" class="winner-banner hidden"></div>
             <div class="arbre">
-                <div class="tour">
+                <div class="tour" id="col-quarts">
                     <div class="tour-title">Quarts de Finale</div>
                     <div id="bracket-quarts"></div>
                 </div>
-                <div class="tour">
+                <div class="tour" id="col-demis">
                     <div class="tour-title">Demi-Finales</div>
                     <div id="bracket-demis"></div>
                 </div>
-                <div class="tour">
+                <div class="tour" id="col-finale">
                     <div class="tour-title">Grand Finale</div>
                     <div id="bracket-finale"></div>
                 </div>
@@ -364,31 +379,33 @@
     </div>
 
     <script>
+        let maxJoueurs = 16;
         let listeJoueurs = [];
-        let groupes = { A: [], B: [], C: [], D: [] };
+        let groupes = {};
         let matchsPoules = [];
         
-        // Ajout de la France à la liste des sélections
         const listeEquipes = [
             "France", "Argentine", "Espagne", "Portugal", "Brésil", "Allemagne", 
-            "Côte d'Ivoire", "Maroc", "Angleterre", "Pays-Bas", "Belgique", "France"
+            "Côte d'Ivoire", "Maroc", "Angleterre", "Pays-Bas", "Belgique", "Italie"
         ];
 
-        let phaseFinale = {
-            quarts: [
-                { id: 0, home: "1er Groupe A", away: "2e Groupe B", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home', eqHome: "", eqAway: "" },
-                { id: 1, home: "1er Groupe C", away: "2e Groupe D", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away', eqHome: "", eqAway: "" },
-                { id: 2, home: "1er Groupe B", away: "2e Groupe A", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'home', eqHome: "", eqAway: "" },
-                { id: 3, home: "1er Groupe D", away: "2e Groupe C", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'away', eqHome: "", eqAway: "" }
-            ],
-            demis: [
-                { id: 0, home: "Gagnant Q1", away: "Gagnant Q2", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home', eqHome: "", eqAway: "" },
-                { id: 1, home: "Gagnant Q3", away: "Gagnant Q4", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away', eqHome: "", eqAway: "" }
-            ],
-            finale: [
-                { id: 0, home: "Gagnant Demi 1", away: "Gagnant Demi 2", scoreHome: null, scoreAway: null }
-            ]
-        };
+        let phaseFinale = { quarts: [], demis: [], finale: [] };
+
+        // Initialisation de la grille
+        adapterGrilleJoueurs(16);
+
+        function adapterGrilleJoueurs(nb) {
+            maxJoueurs = parseInt(nb, 10);
+            const grid = document.getElementById('playersGrid');
+            grid.innerHTML = '';
+            for(let i = 1; i <= maxJoueurs; i++) {
+                grid.innerHTML += `
+                    <div class="form-group">
+                        <input type="text" class="player-in" value="Joueur ${i}">
+                    </div>
+                `;
+            }
+        }
 
         function genererTournoi() {
             listeJoueurs = [];
@@ -397,43 +414,84 @@
                 if(input.value.trim() !== "") listeJoueurs.push(input.value.trim());
             });
 
-            while(listeJoueurs.length < 16) {
+            while(listeJoueurs.length < maxJoueurs) {
                 listeJoueurs.push("Joueur " + (listeJoueurs.length + 1));
             }
 
             listeJoueurs.sort(() => Math.random() - 0.5);
 
-            const nomsGroupes = ['A', 'B', 'C', 'D'];
-            groupes = { A: [], B: [], C: [], D: [] };
-            matchsPoules = [];
+            // Structuration automatique des poules selon le nombre de joueurs
+            groupes = {};
+            let nomsGroupes = ['A'];
+            if (maxJoueurs >= 6 && maxJoueurs <= 10) nomsGroupes = ['A', 'B'];
+            if (maxJoueurs === 12) nomsGroupes = ['A', 'B', 'C'];
+            if (maxJoueurs === 14) nomsGroupes = ['A', 'B'];
+            if (maxJoueurs === 16) nomsGroupes = ['A', 'B', 'C', 'D'];
 
-            for (let i = 0; i < 16; i++) {
-                let grp = nomsGroupes[Math.floor(i / 4)];
+            nomsGroupes.forEach(g => groupes[g] = []);
+            
+            for (let i = 0; i < maxJoueurs; i++) {
+                let grp = nomsGroupes[i % nomsGroupes.length];
                 groupes[grp].push(listeJoueurs[i]);
             }
 
-            nomsGroupes.forEach(g => {
+            matchsPoules = [];
+            // Génération dynamique des rencontres de poules (Algorithme de Berger simplifié)
+            Object.keys(groupes).forEach(g => {
                 let j = groupes[g];
-                matchsPoules.push({ groupe: g, journee: 1, home: j[0], away: j[1], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
-                matchsPoules.push({ groupe: g, journee: 1, home: j[2], away: j[3], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
-                matchsPoules.push({ groupe: g, journee: 2, home: j[0], away: j[2], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
-                matchsPoules.push({ groupe: g, journee: 2, home: j[1], away: j[3], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
-                matchsPoules.push({ groupe: g, journee: 3, home: j[0], away: j[3], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
-                matchsPoules.push({ groupe: g, journee: 3, home: j[1], away: j[2], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
+                let n = j.length;
+                for(let k = 0; k < n; k++) {
+                    for(let l = k + 1; l < n; l++) {
+                        // Répartition basique en journées virtuelles pour l'affichage
+                        let journee = Math.floor((k + l) % 3) + 1; 
+                        matchsPoules.push({ groupe: g, journee: journee, home: j[k], away: j[l], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
+                    }
+                }
             });
+
+            // Structurer l'arbre final selon le gabarit
+            initialiserArbre();
 
             document.getElementById('setupSection').classList.add('hidden');
             document.getElementById('tournamentLayout').classList.remove('hidden');
 
             afficherPoules();
-            afficherArbre();
+        }
+
+        function initialiserArbre() {
+            // Masquage ou affichage des colonnes selon la taille
+            if (maxJoueurs <= 8) {
+                document.getElementById('col-quarts').classList.add('hidden');
+                phaseFinale.quarts = [];
+                phaseFinale.demis = [
+                    { id: 0, home: "1er Groupe A", away: "2e Groupe B", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home', eqHome: "", eqAway: "" },
+                    { id: 1, home: "1er Groupe B", away: "2e Groupe A", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away', eqHome: "", eqAway: "" }
+                ];
+                if(maxJoueurs === 4) {
+                    phaseFinale.demis[0].home = "1er Poule"; phaseFinale.demis[0].away = "4e Poule";
+                    phaseFinale.demis[1].home = "2e Poule"; phaseFinale.demis[1].away = "3e Poule";
+                }
+            } else {
+                document.getElementById('col-quarts').classList.remove('hidden');
+                phaseFinale.quarts = [
+                    { id: 0, home: "Qualifié", away: "Qualifié", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home', eqHome: "", eqAway: "" },
+                    { id: 1, home: "Qualifié", away: "Qualifié", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away', eqHome: "", eqAway: "" },
+                    { id: 2, home: "Qualifié", away: "Qualifié", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'home', eqHome: "", eqAway: "" },
+                    { id: 3, home: "Qualifié", away: "Qualifié", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'away', eqHome: "", eqAway: "" }
+                ];
+                phaseFinale.demis = [
+                    { id: 0, home: "Gagnant Q1", away: "Gagnant Q2", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home', eqHome: "", eqAway: "" },
+                    { id: 1, home: "Gagnant Q3", away: "Gagnant Q4", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away', eqHome: "", eqAway: "" }
+                ];
+            }
+            phaseFinale.finale = [{ id: 0, home: "Finaliste 1", away: "Finaliste 2", scoreHome: null, scoreAway: null }];
         }
 
         function afficherPoules() {
             const container = document.getElementById('groupsContainer');
             container.innerHTML = '';
 
-            ['A', 'B', 'C', 'D'].forEach(g => {
+            Object.keys(groupes).forEach(g => {
                 const groupCard = document.createElement('div');
                 groupCard.className = 'group-card';
                 
@@ -489,21 +547,25 @@
                 stats[j].diff = stats[j].bp - stats[j].bc;
             });
 
-            let qualifies = {};
+            let globalRankingFlat = [];
 
-            ['A', 'B', 'C', 'D'].forEach(g => {
+            Object.keys(groupes).forEach(g => {
                 let classement = groupes[g].map(j => stats[j]).sort((a, b) => {
                     if (b.points !== a.points) return b.points - a.points;
                     return b.diff - a.diff;
                 });
 
-                qualifies[g] = [classement[0].nom, classement[1].nom];
+                globalRankingFlat.push(...classement);
 
                 const tbody = document.getElementById(`tbody-group-${g}`);
                 tbody.innerHTML = '';
+                
+                let limitQualif = maxJoueurs === 16 ? 2 : (maxJoueurs === 12 ? 2 : 2);
+                if (maxJoueurs === 4) limitQualif = 4;
+
                 classement.forEach((p, idx) => {
-                    let isQualifiedClass = idx < 2 ? 'class="qualified-zone"' : '';
-                    let badge = idx < 2 ? `<span class="badge badge-${idx+1}">${idx+1}</span>` : `<strong>${idx+1}</strong>`;
+                    let isQualifiedClass = idx < limitQualif ? 'class="qualified-zone"' : '';
+                    let badge = idx < limitQualif ? `<span class="badge badge-${idx+1}">${idx+1}</span>` : `<strong>${idx+1}</strong>`;
                     
                     tbody.innerHTML += `
                         <tr ${isQualifiedClass}>
@@ -519,33 +581,32 @@
                 const matchesDiv = document.getElementById(`matches-group-${g}`);
                 matchesDiv.innerHTML = '';
                 
-                for(let j_num = 1; j_num <= 3; j_num++) {
-                    const jTitle = document.createElement('div');
-                    jTitle.className = 'journee-title';
-                    jTitle.innerText = `Journée ${j_num}`;
-                    matchesDiv.appendChild(jTitle);
+                // Regroupement visuel basique
+                const mWrapperGroup = document.createElement('div');
+                mWrapperGroup.className = 'journee-title';
+                mWrapperGroup.innerText = "Matchs de Poule";
+                matchesDiv.appendChild(mWrapperGroup);
 
-                    matchsPoules.filter(m => m.groupe === g && m.journee === j_num).forEach((match) => {
-                        let globalIndex = matchsPoules.indexOf(match);
-                        const mWrapper = document.createElement('div');
-                        mWrapper.className = 'match-wrapper';
-                        
-                        mWrapper.innerHTML = `
-                            <div class="match-card">
-                                <div class="team home">${match.home} <span class="team-sub">${match.eqHome || '⚠️ Aucune'}</span></div>
-                                <input type="number" class="score-input" value="${match.scoreHome !== null ? match.scoreHome : ''}" oninput="majScorePoule(${globalIndex}, 'home', this.value)">
-                                <div class="vs">VS</div>
-                                <input type="number" class="score-input" value="${match.scoreAway !== null ? match.scoreAway : ''}" oninput="majScorePoule(${globalIndex}, 'away', this.value)">
-                                <div class="team away">${match.away} <span class="team-sub">${match.eqAway || '⚠️ Aucune'}</span></div>
-                            </div>
-                            <button class="btn-random" onclick="selectionnerEquipesAleatoires('poules', ${globalIndex})">🎲 Sélection Aléatoire</button>
-                        `;
-                        matchesDiv.appendChild(mWrapper);
-                    });
-                }
+                matchsPoules.filter(m => m.groupe === g).forEach((match) => {
+                    let globalIndex = matchsPoules.indexOf(match);
+                    const mWrapper = document.createElement('div');
+                    mWrapper.className = 'match-wrapper';
+                    
+                    mWrapper.innerHTML = `
+                        <div class="match-card">
+                            <div class="team home">${match.home} <span class="team-sub">${match.eqHome || '⚠️ Aucune'}</span></div>
+                            <input type="number" class="score-input" value="${match.scoreHome !== null ? match.scoreHome : ''}" oninput="majScorePoule(${globalIndex}, 'home', this.value)">
+                            <div class="vs">VS</div>
+                            <input type="number" class="score-input" value="${match.scoreAway !== null ? match.scoreAway : ''}" oninput="majScorePoule(${globalIndex}, 'away', this.value)">
+                            <div class="team away">${match.away} <span class="team-sub">${match.eqAway || '⚠️ Aucune'}</span></div>
+                        </div>
+                        <button class="btn-random" onclick="selectionnerEquipesAleatoires('poules', ${globalIndex})">🎲 Sélection Aléatoire</button>
+                    `;
+                    matchesDiv.appendChild(mWrapper);
+                });
             });
 
-            injecterQualifiesPhaseFinale(qualifies);
+            injecterQualifiesPhaseFinale(stats);
         }
 
         function majScorePoule(index, side, val) {
@@ -555,35 +616,49 @@
             calculerEtAfficherPoulesStats();
         }
 
-        function injecterQualifiesPhaseFinale(qualifies) {
-            phaseFinale.quarts[0].home = qualifies.A[0];
-            phaseFinale.quarts[0].away = qualifies.B[1];
-            phaseFinale.quarts[1].home = qualifies.C[0];
-            phaseFinale.quarts[1].away = qualifies.D[1];
-            phaseFinale.quarts[2].home = qualifies.B[0];
-            phaseFinale.quarts[2].away = qualifies.A[1];
-            phaseFinale.quarts[3].home = qualifies.D[0];
-            phaseFinale.quarts[3].away = qualifies.C[1];
+        function injecterQualifiesPhaseFinale(stats) {
+            let trierPoule = (g) => groupes[g].map(j => stats[j]).sort((a,b) => (b.points - a.points) || (b.diff - a.diff));
+            
+            if (maxJoueurs === 16) {
+                let cA = trierPoule('A'), cB = trierPoule('B'), cC = trierPoule('C'), cD = trierPoule('D');
+                phaseFinale.quarts[0].home = cA[0].nom; phaseFinale.quarts[0].away = cB[1].nom;
+                phaseFinale.quarts[1].home = cC[0].nom; phaseFinale.quarts[1].away = cD[1].nom;
+                phaseFinale.quarts[2].home = cB[0].nom; phaseFinale.quarts[2].away = cA[1].nom;
+                phaseFinale.quarts[3].home = cD[0].nom; phaseFinale.quarts[3].away = cC[1].nom;
+            } else if (maxJoueurs === 12) {
+                let cA = trierPoule('A'), cB = trierPoule('B'), cC = trierPoule('C');
+                let lesDeuxiemes = [cA[1], cB[1], cC[1]].sort((a,b) => (b.points - a.points) || (b.diff - a.diff));
+                phaseFinale.quarts[0].home = cA[0].nom; phaseFinale.quarts[0].away = lesDeuxiemes[2].nom; 
+                phaseFinale.quarts[1].home = cB[0].nom; phaseFinale.quarts[1].away = lesDeuxiemes[1].nom;
+                phaseFinale.quarts[2].home = cC[0].nom; phaseFinale.quarts[2].away = lesDeuxiemes[0].nom;
+                phaseFinale.quarts[3].home = cA[1].nom; phaseFinale.quarts[3].away = cB[1].nom;
+            } else if (maxJoueurs === 8 || maxJoueurs === 6 || maxJoueurs === 14) {
+                let cA = trierPoule('A'), cB = trierPoule('B');
+                phaseFinale.demis[0].home = cA[0].nom; phaseFinale.demis[0].away = cB[1].nom;
+                phaseFinale.demis[1].home = cB[0].nom; phaseFinale.demis[1].away = cA[1].nom;
+            } else if (maxJoueurs === 4) {
+                let cA = trierPoule('A');
+                phaseFinale.demis[0].home = cA[0].nom; phaseFinale.demis[0].away = cA[3].nom;
+                phaseFinale.demis[1].home = cA[1].nom; phaseFinale.demis[1].away = cA[2].nom;
+            }
 
             calculerPhaseFinale();
         }
 
         function calculerPhaseFinale() {
-            phaseFinale.quarts.forEach(q => {
-                if(q.scoreHome !== null && q.scoreAway !== null) {
-                    let vainqueur = q.scoreHome > q.scoreAway ? q.home : q.away;
-                    if (q.scoreHome === q.scoreAway) vainqueur = q.home + " (Tab)";
-                    
-                    if(q.nextSide === 'home') phaseFinale.demis[q.nextMatch].home = vainqueur;
-                    else phaseFinale.demis[q.nextMatch].away = vainqueur;
-                }
-            });
+            if(phaseFinale.quarts.length > 0) {
+                phaseFinale.quarts.forEach(q => {
+                    if(q.scoreHome !== null && q.scoreAway !== null) {
+                        let vainqueur = q.scoreHome > q.scoreAway ? q.home : q.away;
+                        if(q.nextSide === 'home') phaseFinale.demis[q.nextMatch].home = vainqueur;
+                        else phaseFinale.demis[q.nextMatch].away = vainqueur;
+                    }
+                });
+            }
 
             phaseFinale.demis.forEach(d => {
                 if(d.scoreHome !== null && d.scoreAway !== null) {
                     let vainqueur = d.scoreHome > d.scoreAway ? d.home : d.away;
-                    if (d.scoreHome === d.scoreAway) vainqueur = d.home + " (Tab)";
-                    
                     if(d.nextSide === 'home') phaseFinale.finale[d.nextMatch].home = vainqueur;
                     else phaseFinale.finale[d.nextMatch].away = vainqueur;
                 }
@@ -593,7 +668,6 @@
             const banner = document.getElementById('winnerBanner');
             if(f.scoreHome !== null && f.scoreAway !== null) {
                 let vainqueur = f.scoreHome > f.scoreAway ? f.home : f.away;
-                if(f.scoreHome === f.scoreAway) vainqueur = f.home + " (Tab)";
                 banner.innerHTML = `👑 Vainqueur du Tournoi : ${vainqueur} 👑`;
                 banner.classList.remove('hidden');
             } else {
@@ -607,12 +681,11 @@
             let score = val === "" ? null : parseInt(val, 10);
             if(side === 'home') phaseFinale[etape][index].scoreHome = score;
             else phaseFinale[etape][index].scoreAway = score;
-            
             calculerPhaseFinale();
         }
 
         function afficherArbre() {
-            renderEtape('quarts', 'bracket-quarts', true);
+            if(phaseFinale.quarts.length > 0) renderEtape('quarts', 'bracket-quarts', true);
             renderEtape('demis', 'bracket-demis', true);
             renderEtape('finale', 'bracket-finale', false);
         }
@@ -643,7 +716,6 @@
             });
         }
 
-        // --- SÉLECTION INSTANTANÉE DES ÉQUIPES ---
         function selectionnerEquipesAleatoires(etape, index) {
             let index1 = Math.floor(Math.random() * listeEquipes.length);
             let index2 = Math.floor(Math.random() * listeEquipes.length);
