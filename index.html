@@ -146,12 +146,15 @@
             padding-left: 8px;
         }
 
-        .match-card {
+        .match-wrapper {
             background-color: var(--bg-color);
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            padding: 10px 15px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            padding: 10px;
+        }
+
+        .match-card {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -168,6 +171,14 @@
 
         .team.home { text-align: right; }
         .team.away { text-align: left; }
+
+        .team-sub {
+            font-size: 12px;
+            color: var(--token-color);
+            font-weight: bold;
+            display: block;
+            margin-top: 3px;
+        }
 
         .vs {
             padding: 0 5px;
@@ -186,10 +197,23 @@
             background-color: var(--input-bg);
         }
 
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
+        .btn-random {
+            background-color: #2a244d;
+            border: 1px solid var(--border-color);
+            color: var(--accent-color);
+            font-size: 11px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: auto;
+            margin: 8px auto 0 auto;
+            display: block;
+            text-transform: none;
+            transition: all 0.2s;
+        }
+        .btn-random:hover { 
+            background-color: var(--accent-color); 
+            color: var(--bg-color);
         }
 
         table {
@@ -241,7 +265,7 @@
 
         .tour {
             flex: 1;
-            min-width: 250px;
+            min-width: 270px;
             display: flex;
             flex-direction: column;
             justify-content: space-around;
@@ -256,9 +280,7 @@
             text-transform: uppercase;
         }
 
-        .hidden {
-            display: none;
-        }
+        .hidden { display: none; }
         
         .badge {
             display: inline-block;
@@ -346,16 +368,21 @@
         let groupes = { A: [], B: [], C: [], D: [] };
         let matchsPoules = [];
         
+        const listeEquipes = [
+            "Argentine", "Espagne", "Portugal", "Brésil", "Allemagne", 
+            "Côte d'Ivoire", "Maroc", "Angleterre", "Pays-Bas", "Belgique"
+        ];
+
         let phaseFinale = {
             quarts: [
-                { id: 0, home: "1er Groupe A", away: "2e Groupe B", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home' },
-                { id: 1, home: "1er Groupe C", away: "2e Groupe D", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away' },
-                { id: 2, home: "1er Groupe B", away: "2e Groupe A", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'home' },
-                { id: 3, home: "1er Groupe D", away: "2e Groupe C", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'away' }
+                { id: 0, home: "1er Groupe A", away: "2e Groupe B", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home', eqHome: "", eqAway: "" },
+                { id: 1, home: "1er Groupe C", away: "2e Groupe D", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away', eqHome: "", eqAway: "" },
+                { id: 2, home: "1er Groupe B", away: "2e Groupe A", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'home', eqHome: "", eqAway: "" },
+                { id: 3, home: "1er Groupe D", away: "2e Groupe C", scoreHome: null, scoreAway: null, nextMatch: 1, nextSide: 'away', eqHome: "", eqAway: "" }
             ],
             demis: [
-                { id: 0, home: "Gagnant Q1", away: "Gagnant Q2", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home' },
-                { id: 1, home: "Gagnant Q3", away: "Gagnant Q4", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away' }
+                { id: 0, home: "Gagnant Q1", away: "Gagnant Q2", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'home', eqHome: "", eqAway: "" },
+                { id: 1, home: "Gagnant Q3", away: "Gagnant Q4", scoreHome: null, scoreAway: null, nextMatch: 0, nextSide: 'away', eqHome: "", eqAway: "" }
             ],
             finale: [
                 { id: 0, home: "Gagnant Demi 1", away: "Gagnant Demi 2", scoreHome: null, scoreAway: null }
@@ -384,18 +411,14 @@
                 groupes[grp].push(listeJoueurs[i]);
             }
 
-            // Génération par Journées (Chaque joueur rencontre les 3 autres sans doublons)
             nomsGroupes.forEach(g => {
                 let j = groupes[g];
-                // Journée 1 : 1 vs 2 et 3 vs 4
-                matchsPoules.push({ groupe: g, journee: 1, home: j[0], away: j[1], scoreHome: null, scoreAway: null });
-                matchsPoules.push({ groupe: g, journee: 1, home: j[2], away: j[3], scoreHome: null, scoreAway: null });
-                // Journée 2 : 1 vs 3 et 2 vs 4
-                matchsPoules.push({ groupe: g, journee: 2, home: j[0], away: j[2], scoreHome: null, scoreAway: null });
-                matchsPoules.push({ groupe: g, journee: 2, home: j[1], away: j[3], scoreHome: null, scoreAway: null });
-                // Journée 3 : 1 vs 4 et 2 vs 3
-                matchsPoules.push({ groupe: g, journee: 3, home: j[0], away: j[3], scoreHome: null, scoreAway: null });
-                matchsPoules.push({ groupe: g, journee: 3, home: j[1], away: j[2], scoreHome: null, scoreAway: null });
+                matchsPoules.push({ groupe: g, journee: 1, home: j[0], away: j[1], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
+                matchsPoules.push({ groupe: g, journee: 1, home: j[2], away: j[3], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
+                matchsPoules.push({ groupe: g, journee: 2, home: j[0], away: j[2], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
+                matchsPoules.push({ groupe: g, journee: 2, home: j[1], away: j[3], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
+                matchsPoules.push({ groupe: g, journee: 3, home: j[0], away: j[3], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
+                matchsPoules.push({ groupe: g, journee: 3, home: j[1], away: j[2], scoreHome: null, scoreAway: null, eqHome: "", eqAway: "" });
             });
 
             document.getElementById('setupSection').classList.add('hidden');
@@ -495,7 +518,6 @@
                 const matchesDiv = document.getElementById(`matches-group-${g}`);
                 matchesDiv.innerHTML = '';
                 
-                // Affichage propre découpé par Journées de 1 à 3
                 for(let j_num = 1; j_num <= 3; j_num++) {
                     const jTitle = document.createElement('div');
                     jTitle.className = 'journee-title';
@@ -504,16 +526,20 @@
 
                     matchsPoules.filter(m => m.groupe === g && m.journee === j_num).forEach((match) => {
                         let globalIndex = matchsPoules.indexOf(match);
-                        const mCard = document.createElement('div');
-                        mCard.className = 'match-card';
-                        mCard.innerHTML = `
-                            <div class="team home">${match.home}</div>
-                            <input type="number" class="score-input" value="${match.scoreHome !== null ? match.scoreHome : ''}" oninput="majScorePoule(${globalIndex}, 'home', this.value)">
-                            <div class="vs">VS</div>
-                            <input type="number" class="score-input" value="${match.scoreAway !== null ? match.scoreAway : ''}" oninput="majScorePoule(${globalIndex}, 'away', this.value)">
-                            <div class="team away">${match.away}</div>
+                        const mWrapper = document.createElement('div');
+                        mWrapper.className = 'match-wrapper';
+                        
+                        mWrapper.innerHTML = `
+                            <div class="match-card">
+                                <div class="team home">${match.home} <span class="team-sub">${match.eqHome || '⚠️ Aucune'}</span></div>
+                                <input type="number" class="score-input" value="${match.scoreHome !== null ? match.scoreHome : ''}" oninput="majScorePoule(${globalIndex}, 'home', this.value)">
+                                <div class="vs">VS</div>
+                                <input type="number" class="score-input" value="${match.scoreAway !== null ? match.scoreAway : ''}" oninput="majScorePoule(${globalIndex}, 'away', this.value)">
+                                <div class="team away">${match.away} <span class="team-sub">${match.eqAway || '⚠️ Aucune'}</span></div>
+                            </div>
+                            <button class="btn-random" onclick="selectionnerEquipesAleatoires('poules', ${globalIndex})">🎲 Sélection Aléatoire</button>
                         `;
-                        matchesDiv.appendChild(mCard);
+                        matchesDiv.appendChild(mWrapper);
                     });
                 }
             });
@@ -585,27 +611,60 @@
         }
 
         function afficherArbre() {
-            renderEtape('quarts', 'bracket-quarts');
-            renderEtape('demis', 'bracket-demis');
-            renderEtape('finale', 'bracket-finale');
+            renderEtape('quarts', 'bracket-quarts', true);
+            renderEtape('demis', 'bracket-demis', true);
+            renderEtape('finale', 'bracket-finale', false);
         }
 
-        function renderEtape(etape, elementId) {
+        function renderEtape(etape, elementId, avecBouton) {
             const block = document.getElementById(elementId);
             block.innerHTML = '';
 
             phaseFinale[etape].forEach((match, index) => {
-                const div = document.createElement('div');
-                div.className = 'match-card';
-                div.innerHTML = `
-                    <div class="team home">${match.home}</div>
-                    <input type="number" class="score-input" value="${match.scoreHome !== null ? match.scoreHome : ''}" oninput="majScoreArbre('${etape}', ${index}, 'home', this.value)">
-                    <div class="vs">VS</div>
-                    <input type="number" class="score-input" value="${match.scoreAway !== null ? match.scoreAway : ''}" oninput="majScoreArbre('${etape}', ${index}, 'away', this.value)">
-                    <div class="team away">${match.away}</div>
+                const mWrapper = document.createElement('div');
+                mWrapper.className = 'match-wrapper';
+                
+                let eqHDisp = avecBouton ? `<span class="team-sub">${match.eqHome || '⚠️ Aucune'}</span>` : '';
+                let eqADisp = avecBouton ? `<span class="team-sub">${match.eqAway || '⚠️ Aucune'}</span>` : '';
+                let buttonDisp = avecBouton ? `<button class="btn-random" onclick="selectionnerEquipesAleatoires('${etape}', ${index})">🎲 Sélection Aléatoire</button>` : '';
+
+                mWrapper.innerHTML = `
+                    <div class="match-card">
+                        <div class="team home">${match.home} ${eqHDisp}</div>
+                        <input type="number" class="score-input" value="${match.scoreHome !== null ? match.scoreHome : ''}" oninput="majScoreArbre('${etape}', ${index}, 'home', this.value)">
+                        <div class="vs">VS</div>
+                        <input type="number" class="score-input" value="${match.scoreAway !== null ? match.scoreAway : ''}" oninput="majScoreArbre('${etape}', ${index}, 'away', this.value)">
+                        <div class="team away">${match.away} ${eqADisp}</div>
+                    </div>
+                    ${buttonDisp}
                 `;
-                block.appendChild(div);
+                block.appendChild(mWrapper);
             });
+        }
+
+        // --- SÉLECTION INSTANTANÉE DES ÉQUIPES ---
+        function selectionnerEquipesAleatoires(etape, index) {
+            // Sélection de 2 index différents dans le tableau d'équipes
+            let index1 = Math.floor(Math.random() * listeEquipes.length);
+            let index2 = Math.floor(Math.random() * listeEquipes.length);
+            
+            // Éviter d'avoir deux fois la même équipe dans le même match
+            while(index1 === index2) {
+                index2 = Math.floor(Math.random() * listeEquipes.length);
+            }
+
+            let eqHomeFinal = listeEquipes[index1];
+            let eqAwayFinal = listeEquipes[index2];
+
+            if (etape === 'poules') {
+                matchsPoules[index].eqHome = eqHomeFinal;
+                matchsPoules[index].eqAway = eqAwayFinal;
+                afficherPoules();
+            } else {
+                phaseFinale[etape][index].eqHome = eqHomeFinal;
+                phaseFinale[etape][index].eqAway = eqAwayFinal;
+                afficherArbre();
+            }
         }
     </script>
 </body>
